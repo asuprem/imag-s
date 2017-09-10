@@ -24,5 +24,3 @@ def exact-spo(e_subject, e_predicate, e_object):
 if __name__ == "__main__":
     exact-spo('leg.n.01', 'under.r.01', 'counter.n.01')
 
-
-
