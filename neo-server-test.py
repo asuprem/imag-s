@@ -21,6 +21,13 @@ def exact_spo(e_subject, e_predicate, e_object):
                 pdb.set_trace()
                 #print(record["b.name"])
                     
-if __name__ == "__main__":
-    exact_spo('leg.n.01', 'under.r.01', 'counter.n.01')
+    
+def main():
+    e_subject = input ("Query subject: ")
+    e_predicate = input ("Query predicate: ")
+    e_object = input ("Query object: ")
 
+    exact_spo(e_subject, e_predicate, e_object)
+
+if __name__ == "__main__":
+    main()
