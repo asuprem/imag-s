@@ -1,5 +1,6 @@
 from neo4j.v1 import GraphDatabase
 import pdb
+import synset_explore
 
 uri = "bolt://localhost:7687"
 driver = GraphDatabase.driver(uri, auth=("neo4j", "scientia"))
@@ -29,7 +30,14 @@ def exact_spo(e_subject, e_predicate, e_object):
                 pdb.set_trace()
                 #print(record["b.name"])
                     
-    
+def obj_count(obj_term):
+    with driver.session() as session:
+        with session.begin_transaction() as tx:
+            for record in tx.run("match (n:MedObject) where n.synset='" + obj_term + "' return count(n)"):
+                return record
+
+
+
 def main():
     e_s_attr = raw_input ("Query subject attribute: ")
     e_subject = raw_input ("Query subject: ")
@@ -37,7 +45,9 @@ def main():
     e_object = raw_input ("Query object: ")
     e_o_attr = raw_input ("Query object attribute: ")
 
-    exact_spo(e_subject, e_predicate, e_object)
+    num_subj = obj_count(e_subject)
+
+    #exact_spo(e_subject, e_predicate, e_object)
 
 if __name__ == "__main__":
     main()
