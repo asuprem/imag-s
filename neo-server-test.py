@@ -23,7 +23,7 @@ def exact_spo(e_subject, e_predicate, e_object):
     
     with driver.session() as session:
         with session.begin_transaction() as tx:
-            for record in tx.run(   "match (s:Object)-[:SUBJ]->(p:Relation)-[:OBJ]->(o:Object) " + \
+            for record in tx.run(   "match (s:MedObject)-[:SUBJ]->(p:MedRelation)-[:OBJ]->(o:MedObject) " + \
                                     match_construct + \
                                     "return s,p,o"):
                 pdb.set_trace()
