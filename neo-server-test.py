@@ -34,19 +34,22 @@ def obj_count(obj_term):
     with driver.session() as session:
         with session.begin_transaction() as tx:
             for record in tx.run("match (n:MedObject) where n.synset='" + obj_term + "' return count(n)"):
-                return record
+                return record['count(n)']
 
 
 
 def main():
-    e_s_attr = raw_input ("Query subject attribute: ")
-    e_subject = raw_input ("Query subject: ")
-    e_predicate = raw_input ("Query predicate: ")
-    e_object = raw_input ("Query object: ")
-    e_o_attr = raw_input ("Query object attribute: ")
-
-    num_subj = obj_count(e_subject)
-
+    #e_s_attr = raw_input ("Query subject attribute: ")
+    
+    #e_predicate = raw_input ("Query predicate: ")
+    #e_object = raw_input ("Query object: ")
+    #e_o_attr = raw_input ("Query object attribute: ")
+    
+    while 1:
+        e_subject = raw_input ("Query subject: ")
+        num_subj = obj_count(e_subject)
+        print (e_subject +  ' : ' + str(num_subj) + '\n\n')
+    
     #exact_spo(e_subject, e_predicate, e_object)
 
 if __name__ == "__main__":
