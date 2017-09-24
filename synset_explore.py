@@ -2,8 +2,9 @@ import pdb
 from nltk.corpus import wordnet as wn
 import sqlite3
 import operator
+import sys
 
-conn = sqlite3.connect('../ExtractedData/object_counts.db')
+conn = sqlite3.connect('../ExtractedData/' + sys.argv[1] + '.db')
 sqCurs = conn.cursor()
 
 def get_synset(term):
@@ -33,22 +34,22 @@ while 1:
     #sorted(similarity_idx.items(), key=operator.itemgetter(1))
     family = [str(member)[8:-2] for member in family]
     mains = [str(member)[8:-2] for member in word_list]
-
-    family_synset_counts = dict(sqCurs.execute('Select * from synset_count where synset in ({0})'.format(', '.join('?' for _ in family)), family).fetchall())
-    main_synset_counts = dict(sqCurs.execute('Select * from synset_count where synset in ({0})'.format(', '.join('?' for _ in mains)), mains).fetchall())
+    
+    family_synset_counts = dict(sqCurs.execute('Select synset,count from synset_count where synset in ({0})'.format(', '.join('?' for _ in family)), family).fetchall())
+    main_synset_counts = dict(sqCurs.execute('Select synset,count from synset_count where synset in ({0})'.format(', '.join('?' for _ in mains)), mains).fetchall())
     
     rank_list=[]
     in_dict={}
 
     for idx,word in enumerate(word_list):
         rank_dict={}
-        #print mains[idx] + ' : ' + str(main_synset_counts[mains[idx]] if mains[idx] in main_synset_counts else 0)
+        print mains[idx] + ' : ' + str(main_synset_counts[mains[idx]] if mains[idx] in main_synset_counts else 0)
         if mains[idx] in main_synset_counts and mains[idx] not in in_dict:
             rank_list.append((mains[idx],main_synset_counts[mains[idx]]))
             in_dict[mains[idx]] = 1
         for l_idx, l_word in enumerate(list_ranks[idx]):
             l_str = str(l_word[0])[8:-2]
-            #print '     ' + l_str + ' : ' + str(family_synset_counts[l_str] if l_str in family_synset_counts else 0)
+            print '     ' + l_str + ' : ' + str(family_synset_counts[l_str] if l_str in family_synset_counts else 0)
             if l_str in family_synset_counts and l_str not in in_dict:
                 rank_dict[l_str] = family_synset_counts[l_str]
                 in_dict[l_str] = 1
@@ -56,12 +57,11 @@ while 1:
         rank_list.extend(rank_dict)
 
         #pdb.set_trace()
-
+    print '\n\n'
     for entry in rank_list:
         print entry[0] + ' : ' + str(entry[1])
 
 
 
-    print '\n\n\n'
-    pdb.set_trace()
+    print '\n\n\n-------------------------------\n'
     
