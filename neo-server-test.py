@@ -1,9 +1,6 @@
 from neo4j.v1 import GraphDatabase
 import pdb
-<<<<<<< HEAD
-=======
 import synset_explore
->>>>>>> 435e177f46c4116d85ddaf3813890cd1481872a2
 
 uri = "bolt://localhost:7687"
 driver = GraphDatabase.driver(uri, auth=("neo4j", "scientia"))
@@ -27,24 +24,6 @@ def exact_spo(e_subject, e_predicate, e_object):
     
     with driver.session() as session:
         with session.begin_transaction() as tx:
-<<<<<<< HEAD
-            for record in tx.run(   "match (s:Object)-[:SUBJ]->(p:Relation)-[:OBJ]->(o:Object) "
-                                    "where s.synset={e_subject} "
-                                    "where p.synset={e_predicate} "
-                                    "where o.synset={e_object} "
-                                    "return s,p,o", 
-                                    e_subject=e_subject, 
-                                    e_object=e_object, 
-                                    e_predicate=e_predicate)
-                pdb.set_trace()
-                #print(record["b.name"])
-                    
-if __name__ == "__main__":
-    exact-spo('leg.n.01', 'under.r.01', 'counter.n.01')
-
-
-
-=======
             for record in tx.run(   "match (s:MedObject)-[:SUBJ]->(p:MedRelation)-[:OBJ]->(o:MedObject) " + \
                                     match_construct + \
                                     "return s,p,o"):
@@ -85,4 +64,3 @@ where s.synset="leg.n.01"
 return s,r,o
 
 '''
->>>>>>> 435e177f46c4116d85ddaf3813890cd1481872a2
