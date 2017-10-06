@@ -91,32 +91,7 @@ def main():
         for entry in rank_list:
             print entry[0] + ' : ' + str(entry[1])
 
-        #for entry in 
-        #pdb.set_trace()
-        '''
-        for idx,word in enumerate(word_list):
-            rank_dict={}
-            #THIS IS THE MAINRANKINGS
-            print mains[idx] + ' : ' + str(main_synset_counts[mains[idx]] if mains[idx] in main_synset_counts else 0)
-            if mains[idx] in main_synset_counts and mains[idx] not in in_dict:
-                rank_list.append((mains[idx],main_synset_counts[mains[idx]]))
-                in_dict[mains[idx]] = 1
-            for l_idx, l_word in enumerate(list_ranks[idx]):
-                l_str = str(l_word[0])[8:-2]
-                #THIS IS THE SUBRANKINGS
-                print '     ' + l_str + ' : ' + str(family_synset_counts[l_str] if l_str in family_synset_counts else 0)
-                if l_str in family_synset_counts and l_str not in in_dict:
-                    rank_dict[l_str] = family_synset_counts[l_str]
-                    in_dict[l_str] = 1
-            rank_dict = sorted(rank_dict.items(), key=operator.itemgetter(1), reverse=True)
-            rank_list.extend(rank_dict)
 
-            #pdb.set_trace()
-        print '\n\n'
-        for entry in rank_list:
-            print entry[0] + ' : ' + str(entry[1])
-        pdb.set_trace()
-        '''
 
         print '\n\n\n-------------------------------\n'
     
