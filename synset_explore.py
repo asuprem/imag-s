@@ -3,10 +3,10 @@ from nltk.corpus import wordnet as wn
 import sqlite3
 import operator
 import sys
+#python synset_explore.py ../ExtractedData/objects.db
+# 'WHAT IS THE DATABASE?' <- probably objects and relatio - create a object relation explorer, and a relation explorer
 
-# 'WHAT IS THE DATABASE?'
-
-conn = sqlite3.connect('../ExtractedData/' + sys.argv[1] + '.db')
+conn = sqlite3.connect('../ExtractedData/' + sys.argv[1])
 sqCurs = conn.cursor()
 
 def get_synset(term):
@@ -18,6 +18,9 @@ hyper = lambda s: s.hypernyms()
 def initialize():
     temp = get_synset('man')[0]
     temp.lch_similarity(temp)
+
+#def get_full_sorted(list_ranks):
+
 
 def get_family_rankings(word_list):
     family = set()
@@ -79,7 +82,7 @@ def main():
         print '\n\n'
         for entry in rank_list:
             print entry[0] + ' : ' + str(entry[1])
-
+        pdb.set_trace()
 
 
         print '\n\n\n-------------------------------\n'
