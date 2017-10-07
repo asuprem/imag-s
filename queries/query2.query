@@ -1,0 +1,4 @@
+LocalID,LocalType,Synset,SubjectLocalID,ObjectLocalID
+1,n,man
+2,n,cake
+1,r,eating,1,2
