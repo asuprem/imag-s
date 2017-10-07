@@ -1,6 +1,8 @@
 LocalID,LocalType,Synset,SubjectLocalID,ObjectLocalID
 1,n,man
 2,n,cake
-1,r,eating,1,2
 3,n,trees
+4,n,table
+1,r,eating,1,2
 2,r,along,1,3
+3,r,on,2,4

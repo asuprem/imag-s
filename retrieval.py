@@ -84,6 +84,17 @@ def rankRelations(aggregateSynsets,predicateFamily):
         rankingAverages.append((str(item)[8:-2],tSum))
     rankingAverages = sorted(rankingAverages,key=lambda x:x[1],reverse=True)
     return [item[0] for item in rankingAverages if item[1] >= (2./3)*rankingAverages[0][1]]
+
+def image_ids(query):
+    matchClause = 'match (s:fullObject)-[:SUBJ]->(r:fullRelation)-[:OBJ]->(o:fullObject)'
+    conditionClause = "where s.synset='"+str(query[0])+"' and "
+    conditionClause += "r.synset='"+str(query[1])+"' and "
+    conditionClause += "o.synset='"+str(query[2])+"' "
+    returnClause = 'return s.id'
+    ids = sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
+    #pdb.set_trace()
+    return [item['s.id'] for item in ids]
+
 def main():
 
     objectFamilies = SynsetExplorer('../ExtractedData/objects.db')
@@ -116,12 +127,18 @@ def main():
         queryApproximates[relation] = generateRelations(subjectFamily.getBaseRanking(), relationRanks, objectFamily.getBaseRanking())
 
     print 'Finished getting relations in ' + str(time.time()-start)
+    print '---------------------------------------------\n\n'
     #we have query approximates, and relations
     # we need to get images with the approximates in them.
     
+    image_collection={}
+    for query in relations:
+        image_collection[query]={}
+        for approximate in queryApproximates[query]:
+            image_collection[query][approximate] = image_ids(approximate)
+            print 'Finished getting ' + str(approximate) + ' in '+ str(time.time()-start)
+    
     pdb.set_trace()
-        
-
 
 
 
