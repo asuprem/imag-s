@@ -1,7 +1,11 @@
+import operator
 import time
 from neo4j.v1 import GraphDatabase
 import pdb
-from synset_explorer import Synset_Explorer
+from synset_explorer import SynsetExplorer
+from nltk.corpus import wordnet as wn
+from nltk.corpus.reader.wordnet import WordNetError
+from itertools import product
 #import approximate_utils
 
 uri = "bolt://localhost:7687"
@@ -21,17 +25,24 @@ def subject_relations_approximates(subjects):
     conditionClause = 'where n.synset in '+str(subjects)
     returnClause = 'return r'
     return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
+def object_relations_approximates(objects):
+    matchClause = 'match (r:aggregateRelation)-[:OBJ]->(o:aggregateObject)'
+    conditionClause = 'where o.synset in '+str(objects)
+    returnClause = 'return r'
+    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
 def ssag_object_approximates(subjects,relations):
     matchClause = 'match (n:ssagObject)-[:SUBJ]->(r:ssagRelation)-[:OBJ]->(o:ssagObject)'
     conditionClause = 'where n.synset in '+str(subjects) +'and r.synset in ' + str(relations)
     returnClause = 'return o'
     return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
 
+def generateRelations(gsubject,grelation,gobject):
+    return list(product(gsubject,grelation,gobject))
 
 def main():
 
-    objects = Synset_Explorer('../ExtractedData/objects.db')
-    relations = Synset_Explorer('../ExtractedData/relations.db')
+    objectFamilies = SynsetExplorer('../ExtractedData/objects.db')
+    relationFamilies = SynsetExplorer('../ExtractedData/relations.db')
     #query_file_name = sys.argv[1]
     query_file_name = 'queries/query2.query'
     query_file = open(query_file_name,'r')
@@ -53,21 +64,62 @@ def main():
 
     #----------------------------------------------------------------------------#
     # USE the relation component approximates to generate relation approximates
-    queryApproximates=[]
+    queryApproximates={}
     for relation in relations:
-        subjectFamily = objects.explore(relation[0])
-        objectFamily = objects.explore(relation[2])
+        subjectFamily = objectFamilies.explore(relation[0])
+        objectFamily = objectFamilies.explore(relation[2])
+        predicateFamily = relationFamilies.explore(relation[1])
+
         start=time.time()
-        result = subject_relations_approximates(subjectFamily)
+        #pdb.set_trace()
+        result = subject_relations_approximates(subjectFamily.getBaseHypoRanking())
         aggregate_relation_subject = [item.values()[0]['synset'].encode("utf-8") for item in result]
-        print 'Finished getting relations in ' + str(time.time()-start)
-        result = ssag_object_approximates(subjectFamily,aggregate_relation_subject)
-        ssag_objects = [item.values()[0]['synset'].encode("utf-8") for item in result]
-        print 'Finished getting ssag Objects in ' + str(time.time()-start)
+        result = object_relations_approximates(objectFamily.getBaseHypoRanking())
+        aggregate_relation_object = [item.values()[0]['synset'].encode("utf-8") for item in result]
+        
+        
+        
+        aggregate_relations = aggregate_relation_subject+aggregate_relation_object
+        aggregate_relations = set([item for item in aggregate_relations if (item in aggregate_relation_subject and item in aggregate_relation_object)])
+        aggregateSynsets = [wn.synset(item) for item in aggregate_relations]
+        predicateSynsets = [wn.synset(item) for item in predicateFamily.getFullRanking()]
+        
+        #Set up the multiplicative factor here
+        predicateCounts={}
+        for item in predicateFamily.getFullRanking():
+            predicateCounts[wn.synset(item)]= predicateFamily.getFamilySynsetCounts()[item] if item in predicateFamily.getFamilySynsetCounts() else predicateFamily.getTopLevelSynsetCounts()[item]
+        predicateSum = float(sum([predicateCounts[item] for item in predicateCounts]))
 
+        rankingAverages=[]
+        #wuprankingAverages={}
+        for item in aggregateSynsets:
+            tSum = 0
+            for mains in predicateSynsets:
+                try:
+                    tSum += item.wup_similarity(mains) * (predicateCounts[mains]/predicateSum)
+                except WordNetError:
+                    tSum += 0
+                except TypeError:
+                    tSum += 0
+            #tSum=sum(tSum)/len(predicateCounts)
+            rankingAverages.append((str(item)[8:-2],tSum))
+        rankingAverages = sorted(rankingAverages,key=lambda x:x[1],reverse=True)
+        finalRelationshipRanking = [item[0] for item in rankingAverages if item[1] >= (2./3)*rankingAverages[0][1]]
+        
+        # Mabe combine with hypo ranks????
+        # we have finalRakings, subjectFamily.getBaseHypoRaking(), and objectFamily.getBaseHypoRanking()
 
+        # We generate relations using base, first:
+        queryApproximates[relation] = generateRelations(subjectFamily.getBaseRanking(), finalRelationshipRanking, objectFamily.getBaseRanking())
 
-        pdb.set_trace()
+        
+        
+        
+        #result = ssag_object_approximates(subjectFamily.getBaseHypoRanking(),aggregate_relation_subject)
+        #ssag_objects = [item.values()[0]['synset'].encode("utf-8") for item in result]
+        #print 'Finished getting ssag Objects in ' + str(time.time()-start)
+    print 'Finished getting relations in ' + str(time.time()-start)
+    pdb.set_trace()
         
 
 

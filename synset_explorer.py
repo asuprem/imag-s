@@ -13,8 +13,10 @@ class WordFamily:
     def setTopLevel(self,topLevel):
         self.topLevelFamily = topLevel
     def setHypoRanks(self,hypoRanks):
+        hypoRanks = [item for item in hypoRanks if item not in self.getTopLevel()]
         self.hypoRanks=hypoRanks
     def setHyperRanks(self,hyperRanks):
+        hyperRanks = [item for item in hyperRanks if item not in self.getTopLevel()]
         self.hyperRanks=hyperRanks
     def getTopLevel(self):
         return self.topLevelFamily
@@ -25,9 +27,9 @@ class WordFamily:
     def getWord(self):
         return self.word
     def createRankings(self):
-        self.baseHypoRanking=self.getBaseRanking()[:].extend(self.getHypoRanks())
-        self.baseHyperRanking=self.getBaseRanking()[:].extend(self.getHyperRanks())
-        self.fullRanking = self.getBaseHypoRanking()[:].extend(self.getHyperRanks())
+        self.baseHypoRanking=self.getBaseRanking()+self.getHypoRanks()
+        self.baseHyperRanking=self.getBaseRanking()+self.getHyperRanks()
+        self.fullRanking = self.getBaseHypoRanking()+self.getHyperRanks()
 
     def getBaseRanking(self):
         return self.topLevelFamily
@@ -37,7 +39,14 @@ class WordFamily:
         return self.baseHypoRanking
     def getFullRanking(self):
         return self.fullRanking
-
+    def setFamilySynsetCounts(self,familySynsetCounts):
+        self.familySynsetCounts=familySynsetCounts
+    def setTopLevelSynsetCounts(self,topLevelSynsetCounts):
+        self.topLevelSynsetCounts=topLevelSynsetCounts
+    def getFamilySynsetCounts(self):
+        return self.familySynsetCounts
+    def getTopLevelSynsetCounts(self):
+        return self.topLevelSynsetCounts
 class SynsetExplorer:
     
     def __init__(self,database_file):
@@ -118,16 +127,15 @@ class SynsetExplorer:
         wordList = self.get_synset(self.cleaned(node.getWord()))
         family, hypoRanks, hyperRanks = self.get_family_rankings(wordList)
         topLevels = self.synset_extract(wordList)
-        familySynsetCounts = self.get_counts(family)
-        topLevelSynsetCounts = self.get_counts(topLevels)
+        node.setFamilySynsetCounts(self.get_counts(family))
+        node.setTopLevelSynsetCounts(self.get_counts(topLevels))
 
         setVerify={}
         rankList = []
 
-        node.setTopLevel(self.reduce(topLevels))
-        node.setHypoRanks(self.reduce(self.sort(hypoRanks),familySynsetCounts))
-        node.setHyperRanks(self.reduce(self.sort(hyperRanks),familySynsetCounts))
-    
+        node.setTopLevel(self.reduce(topLevels, node.getTopLevelSynsetCounts()))
+        node.setHypoRanks(self.reduce(self.sort(hypoRanks),node.getFamilySynsetCounts()))
+        node.setHyperRanks(self.reduce(self.sort(hyperRanks),node.getFamilySynsetCounts()))
         node.createRankings()
         
         return node
