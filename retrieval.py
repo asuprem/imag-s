@@ -38,6 +38,7 @@ def ssag_object_approximates(subjects,relations):
     return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
 
 def generateRelations(gsubject,grelation,gobject):
+    #pdb.set_trace()
     return list(product(gsubject,grelation,gobject))
 def extractRelations(query_file_name):
     query_file = open(query_file_name,'r')
@@ -53,6 +54,7 @@ def extractRelations(query_file_name):
     relations = []
     for entry in predicates:
         relations.append((nouns[predicates[entry][1]],predicates[entry][0],nouns[predicates[entry][2]]))
+    return relations
 def unique_intersection(aggregate_relation_object,aggregate_relation_subject):
     aggregate_relations = aggregate_relation_subject+aggregate_relation_object
     aggregate_relations = set([item for item in aggregate_relations if (item in aggregate_relation_subject and item in aggregate_relation_object)])
@@ -69,29 +71,27 @@ def rankRelations(aggregateSynsets,predicateFamily):
     predicateSynsets = toSynset(predicateFamily.getFullRanking())
     predicateCounts, predicateSum = predicate_summary(predicateFamily)
     rankingAverages=[]
-        for item in aggregateSynsets:
-            tSum = 0
-            for mains in predicateSynsets:
-                try:
-                    tSum += item.wup_similarity(mains) * (predicateCounts[mains]/predicateSum)
-                except WordNetError:
-                    tSum += 0
-                except TypeError:
-                    tSum += 0
-            #tSum=sum(tSum)/len(predicateCounts)
-            rankingAverages.append((str(item)[8:-2],tSum))
-        rankingAverages = sorted(rankingAverages,key=lambda x:x[1],reverse=True)
-        finalRelationshipRanking = [item[0] for item in rankingAverages if item[1] >= (2./3)*rankingAverages[0][1]]
+    for item in aggregateSynsets:
+        tSum = 0
+        for mains in predicateSynsets:
+            try:
+                tSum += item.wup_similarity(mains) * (predicateCounts[mains]/predicateSum)
+            except WordNetError:
+                tSum += 0
+            except TypeError:
+                tSum += 0
+        #tSum=sum(tSum)/len(predicateCounts)
+        rankingAverages.append((str(item)[8:-2],tSum))
+    rankingAverages = sorted(rankingAverages,key=lambda x:x[1],reverse=True)
+    return [item[0] for item in rankingAverages if item[1] >= (2./3)*rankingAverages[0][1]]
 def main():
 
     objectFamilies = SynsetExplorer('../ExtractedData/objects.db')
     relationFamilies = SynsetExplorer('../ExtractedData/relations.db')
     #query_file_name = sys.argv[1]
     query_file_name = 'queries/query2.query'
-
     #Get the relations and nouns
     relations = extractRelations(query_file_name)
-    
     #----------------------------------------------------------------------------#
     # USE the relation component approximates to generate relation approximates
     queryApproximates={}
@@ -100,20 +100,25 @@ def main():
         subjectFamily = objectFamilies.explore(relation[0])
         objectFamily = objectFamilies.explore(relation[2])
         predicateFamily = relationFamilies.explore(relation[1])
-
+        #pdb.set_trace()
         start=time.time()
         #Get the cleaned up relations (i.e. without u'sdfdf' -> 'sdfdf')
         aggregate_relation_subject = synset_cleaned(subject_relations_approximates(subjectFamily.getBaseHypoRanking()))
         aggregate_relation_object = synset_cleaned(object_relations_approximates(objectFamily.getBaseHypoRanking()))        
         #Get the unique relations and the predicate relations and convert to synset format (for lch similarity)
+        #pdb.set_trace()
         aggregateSynsets = toSynset(unique_intersection(aggregate_relation_object,aggregate_relation_subject))
         #Get relationship ranks compared to the predicate family
         relationRanks = rankRelations(aggregateSynsets,predicateFamily)
+        #pdb.set_trace()
         # Mabe combine with hypo ranks????
         # We generate relations using base, first:
-        queryApproximates[relation] = generateRelations(subjectFamily.getBaseRanking(), finalRelationshipRanking, objectFamily.getBaseRanking())
+        queryApproximates[relation] = generateRelations(subjectFamily.getBaseRanking(), relationRanks, objectFamily.getBaseRanking())
 
     print 'Finished getting relations in ' + str(time.time()-start)
+    #we have query approximates, and relations
+    # we need to get images with the approximates in them.
+    
     pdb.set_trace()
         
 
