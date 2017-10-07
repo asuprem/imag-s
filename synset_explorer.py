@@ -54,12 +54,12 @@ class SynsetExplorer:
         self.cursor = self.conn.cursor()
         self.hypo = lambda s: s.hyponyms()
         self.hyper = lambda s: s.hypernyms()
-        self.initialize()
+        #self.initialize()
     def get_synset(self,term):
         return wn.synsets(term)
     def initialize(self):
         temp = self.get_synset('man')[0]
-        temp.lch_similarity(temp)
+        temp.wup_similarity(temp)
 
     def get_mains(self,word_list):
         return [str(member)[8:-2] for member in word_list]
@@ -73,7 +73,7 @@ class SynsetExplorer:
     def closure(self, word, closure_function):
         return set([i for i in word.closure(closure_function)])
     def ranking(self, word, family):
-        return {str(i)[8:-2]:word.lch_similarity(i) for i in family}
+        return {str(i)[8:-2]:word.wup_similarity(i) for i in family}
     def ranking_sort(self,rank_list):
         return sorted(rank_list.items(), key=operator.itemgetter(1), reverse=True)
     def synset_extract(self,synsets):
