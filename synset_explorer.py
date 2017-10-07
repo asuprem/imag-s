@@ -3,7 +3,42 @@ from nltk.corpus import wordnet as wn
 import sqlite3
 import operator
 
-class Synset_Explorer:
+#We need to limit the info we send back
+class WordFamily:
+    def __init__(self,word):
+        self.word = word
+        self.topLevelFamily=[]
+        self.hypoRanks=[]
+        self.hyperRanks=[]
+    def setTopLevel(self,topLevel):
+        self.topLevelFamily = topLevel
+    def setHypoRanks(self,hypoRanks):
+        self.hypoRanks=hypoRanks
+    def setHyperRanks(self,hyperRanks):
+        self.hyperRanks=hyperRanks
+    def getTopLevel(self):
+        return self.topLevelFamily
+    def getHyperRanks(self):
+        return self.hyperRanks
+    def getHypoRanks(self):
+        return self.hypoRanks
+    def getWord(self):
+        return self.word
+    def createRankings(self):
+        self.baseHypoRanking=self.getBaseRanking()[:].extend(self.getHypoRanks())
+        self.baseHyperRanking=self.getBaseRanking()[:].extend(self.getHyperRanks())
+        self.fullRanking = self.getBaseHypoRanking()[:].extend(self.getHyperRanks())
+
+    def getBaseRanking(self):
+        return self.topLevelFamily
+    def getBaseHyperRanking(self):
+        return self.baseHyperRanking
+    def getBaseHypoRanking(self):
+        return self.baseHypoRanking
+    def getFullRanking(self):
+        return self.fullRanking
+
+class SynsetExplorer:
     
     def __init__(self,database_file):
         self.conn = sqlite3.connect(database_file)
@@ -60,17 +95,27 @@ class Synset_Explorer:
 
     def cleaned(self,word):
         return word.replace(' ','_')
+    #Sort by distance
+    def reduce(self,inputList,rankingCount):
+        setVerify={}
+        returnList=[]
+        for item in inputList:
+            if item in rankingCount and item not in setVerify:
+                returnList.append(item)
+                setVerify[item]=1
+        return returnList
     def sort(self,rankedList):
         return [sortItem[0] for sortItem in sorted([item for subList in rankedList for item in subList],key=lambda x:x[1],reverse=True)]
 
     def updateRankings(self,rankList, setVerify, inputList, rankingCount):
         for entry in inputList:
-                if entry in rankingCount and entry not in setVerify:
-                    rankList.append((entry,rankingCount[entry]))
-                    setVerify[entry]=1
+            if entry not in setVerify:
+                rankList.append((entry,rankingCount[entry]))
+                setVerify[entry]=1
 
     def explore(self,word):
-        wordList = self.get_synset(self.cleaned(word))
+        node = WordFamily(word)
+        wordList = self.get_synset(self.cleaned(node.getWord()))
         family, hypoRanks, hyperRanks = self.get_family_rankings(wordList)
         topLevels = self.synset_extract(wordList)
         familySynsetCounts = self.get_counts(family)
@@ -79,11 +124,11 @@ class Synset_Explorer:
         setVerify={}
         rankList = []
 
-        hypoRanks = self.sort(hypoRanks)
-        hyperRanks = self.sort(hyperRanks)
-        self.updateRankings(rankList,setVerify,topLevels, topLevelSynsetCounts)
-        self.updateRankings(rankList,setVerify,hypoRanks, familySynsetCounts)
-        self.updateRankings(rankList,setVerify,hyperRanks, familySynsetCounts)
-
-        return [entry[0] for entry in rankList]
+        node.setTopLevel(self.reduce(topLevels))
+        node.setHypoRanks(self.reduce(self.sort(hypoRanks),familySynsetCounts))
+        node.setHyperRanks(self.reduce(self.sort(hyperRanks),familySynsetCounts))
+    
+        node.createRankings()
+        
+        return node
         

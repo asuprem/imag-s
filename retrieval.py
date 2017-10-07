@@ -1,3 +1,4 @@
+import time
 from neo4j.v1 import GraphDatabase
 import pdb
 from synset_explorer import Synset_Explorer
@@ -11,21 +12,20 @@ driver = GraphDatabase.driver(uri, auth=("neo4j", "scientia"))
 def clauseJoin(matchClause,conditionClause,returnClause):
     return matchClause+' '+conditionClause+' '+returnClause
 
+def sessionRun(clause):
+    with driver.session() as session:
+        result = session.run(clause)
+    return result
 def subject_relations_approximates(subjects):
     matchClause = 'match (n:aggregateObject)-[:SUBJ]->(r:aggregateRelation)'
-    conditionClause = 'where s.synset in '+str(subjects)
+    conditionClause = 'where n.synset in '+str(subjects)
     returnClause = 'return r'
-    
-    fullClause = clauseJoin(matchClause,conditionClause,returnClause)
-    
-    with driver.session() as session:
-        with session.begin_transaction() as tx:
-            result = tx.run(fullClause)
-    pdb.set_trace()
-
-
-
-
+    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
+def ssag_object_approximates(subjects,relations):
+    matchClause = 'match (n:ssagObject)-[:SUBJ]->(r:ssagRelation)-[:OBJ]->(o:ssagObject)'
+    conditionClause = 'where n.synset in '+str(subjects) +'and r.synset in ' + str(relations)
+    returnClause = 'return o'
+    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
 
 
 def main():
@@ -56,9 +56,18 @@ def main():
     queryApproximates=[]
     for relation in relations:
         subjectFamily = objects.explore(relation[0])
-        objectFamily = objects.explore(relations[1])
-        pdb.set_trace()
+        objectFamily = objects.explore(relation[2])
+        start=time.time()
+        result = subject_relations_approximates(subjectFamily)
+        aggregate_relation_subject = [item.values()[0]['synset'].encode("utf-8") for item in result]
+        print 'Finished getting relations in ' + str(time.time()-start)
+        result = ssag_object_approximates(subjectFamily,aggregate_relation_subject)
+        ssag_objects = [item.values()[0]['synset'].encode("utf-8") for item in result]
+        print 'Finished getting ssag Objects in ' + str(time.time()-start)
 
+
+
+        pdb.set_trace()
         
 
 
