@@ -1,0 +1,8 @@
+LocalID,LocalType,Synset,SubjectLocalID,ObjectLocalID
+1,n,adult
+2,n,cake
+3,n,frosting
+4,n,shirt
+1,r,eats,1,2
+2,r,on,3,2
+3,r,wearing,1,4

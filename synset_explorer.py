@@ -84,8 +84,10 @@ class SynsetExplorer:
         family = set()
 
         for word in word_list:
-            hypo_family = self.closure(word, self.hypo)
-            hyper_family = self.closure(word, self.hyper)
+            #hypo_family = self.closure(word, self.hypo)
+            #hyper_family = self.closure(word, self.hyper)
+            hypo_family = set(word.hyponyms())
+            hyper_family = set(word.hypernyms())
 
             hypo_extended |= hypo_family
             hyper_extended |= hyper_family
@@ -100,6 +102,7 @@ class SynsetExplorer:
             hyper_ranks.append(self.ranking_sort(hyper_ranking))
 
         family_list = self.synset_extract(family)
+        #spdb.set_trace()
         return family_list, hypo_ranks, hyper_ranks
 
     def cleaned(self,word):

@@ -12,35 +12,10 @@ from itertools import product
 uri = "bolt://localhost:7687"
 driver = GraphDatabase.driver(uri, auth=("neo4j", "scientia"))
 
-# RUN by python retrieval.py query1.query
 
-def clauseJoin(matchClause,conditionClause,returnClause):
-    return matchClause+' '+conditionClause+' '+returnClause
-def synset_cleaned(neo4j_result):
-    return [item.values()[0]['synset'].encode("utf-8") for item in neo4j_result]
-def sessionRun(clause):
-    with driver.session() as session:
-        result = session.run(clause)
-    return result
-def subject_relations_approximates(subjects):
-    matchClause = 'match (n:aggregateObject)-[:SUBJ]->(r:aggregateRelation)'
-    conditionClause = 'where n.synset in '+str(subjects)
-    returnClause = 'return r'
-    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
-def object_relations_approximates(objects):
-    matchClause = 'match (r:aggregateRelation)-[:OBJ]->(o:aggregateObject)'
-    conditionClause = 'where o.synset in '+str(objects)
-    returnClause = 'return r'
-    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
-def ssag_object_approximates(subjects,relations):
-    matchClause = 'match (n:ssagObject)-[:SUBJ]->(r:ssagRelation)-[:OBJ]->(o:ssagObject)'
-    conditionClause = 'where n.synset in '+str(subjects) +'and r.synset in ' + str(relations)
-    returnClause = 'return o'
-    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
 
-def generateRelations(gsubject,grelation,gobject):
-    #pdb.set_trace()
-    return list(product(gsubject,grelation,gobject))
+
+
 def extractRelations(query_file_name):
     query_file = open(query_file_name,'r')
     nouns = {}
@@ -56,46 +31,40 @@ def extractRelations(query_file_name):
     for entry in predicates:
         relations.append((nouns[predicates[entry][1]],predicates[entry][0],nouns[predicates[entry][2]]))
     return relations
+def clauseJoin(matchClause,conditionClause,returnClause):
+    return matchClause+' '+conditionClause+' '+returnClause
+def synset_cleaned(neo4j_result):
+    return [item.values()[0]['synset'].encode("utf-8") for item in neo4j_result]
+def sessionRun(clause):
+    with driver.session() as session:
+        result = session.run(clause)
+    return result
+def subject_relations_approximates(subjects,objects):
+    matchClause = 'match (s:ssagObject)-[:SUBJ]->(r:ssagRelation)-[:OBJ]->(o:ssagObject)'
+    conditionClause = 'where s.synset in '+str(subjects) + ' and o.synset in '+str(objects)
+    returnClause = 'return r'
+    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
+def object_relations_approximates(objects,subjects):
+    matchClause = 'match (s:osagObject)-[:SUBJ]->(r:osagRelation)-[:OBJ]->(o:osagObject)'
+    conditionClause = 'where o.synset in '+str(objects) + ' and s.synset in '+str(subjects)
+    returnClause = 'return r'
+    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
+
+
+def oldsubject_relations_approximates(subjects):
+    matchClause = 'match (n:aggregateObject)-[:SUBJ]->(r:aggregateRelation)'
+    conditionClause = 'where n.synset in '+str(subjects)
+    returnClause = 'return r'
+    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
+def oldobject_relations_approximates(objects):
+    matchClause = 'match (r:aggregateRelation)-[:OBJ]->(o:aggregateObject)'
+    conditionClause = 'where o.synset in '+str(objects)
+    returnClause = 'return r'
+    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
 def unique_intersection(aggregate_relation_object,aggregate_relation_subject):
     aggregate_relations = aggregate_relation_subject+aggregate_relation_object
     aggregate_relations = set([item for item in aggregate_relations if (item in aggregate_relation_subject and item in aggregate_relation_object)])
     return aggregate_relations
-def toSynset(synsetList):
-    return [wn.synset(item) for item in synsetList]
-def predicate_summary(predicateFamily):
-    predicateCounts={}
-    for item in predicateFamily.getFullRanking():
-        predicateCounts[wn.synset(item)]= predicateFamily.getFamilySynsetCounts()[item] if item in predicateFamily.getFamilySynsetCounts() else predicateFamily.getTopLevelSynsetCounts()[item]
-    predicateSum = float(sum([predicateCounts[item] for item in predicateCounts]))
-    return predicateCounts,predicateSum
-def rankRelations(aggregateSynsets,predicateFamily):
-    predicateSynsets = toSynset(predicateFamily.getFullRanking())
-    predicateCounts, predicateSum = predicate_summary(predicateFamily)
-    rankingAverages=[]
-    for item in aggregateSynsets:
-        tSum = 0
-        for mains in predicateSynsets:
-            try:
-                tSum += item.wup_similarity(mains) * (predicateCounts[mains]/predicateSum)
-            except WordNetError:
-                tSum += 0
-            except TypeError:
-                tSum += 0
-        #tSum=sum(tSum)/len(predicateCounts)
-        rankingAverages.append((str(item)[8:-2],tSum))
-    rankingAverages = sorted(rankingAverages,key=lambda x:x[1],reverse=True)
-    return [item[0] for item in rankingAverages if item[1] >= (2./3)*rankingAverages[0][1]]
-
-def image_ids(query):
-    matchClause = 'match (s:fullObject)-[:SUBJ]->(r:fullRelation)-[:OBJ]->(o:fullObject)'
-    conditionClause = "where s.synset='"+str(query[0])+"' and "
-    conditionClause += "r.synset='"+str(query[1])+"' and "
-    conditionClause += "o.synset='"+str(query[2])+"' "
-    returnClause = 'return s.img'
-    ids = sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
-    #pdb.set_trace()
-    return [item['s.img'] for item in ids]
-
 def main():
 
     objectFamilies = SynsetExplorer('../ExtractedData/objects.db')
@@ -116,10 +85,12 @@ def main():
             #pdb.set_trace()
             start=time.time()
             #Get the cleaned up relations (i.e. without u'sdfdf' -> 'sdfdf')
-            aggregate_relation_subject = synset_cleaned(subject_relations_approximates(subjectFamily.getFullRanking()))
-            aggregate_relation_object = synset_cleaned(object_relations_approximates(objectFamily.getFullRanking()))        
+            pdb.set_trace()
+            aggregate_relation_subject = synset_cleaned(subject_relations_approximates(subjectFamily.getFullRanking(),objectFamily.getFullRanking()))
+            aggregate_relation_object = synset_cleaned(object_relations_approximates(objectFamily.getFullRanking(),subjectFamily.getFullRanking()))
             #Get the unique relations and the predicate relations and convert to synset format (for lch similarity)
             #pdb.set_trace()
+            '''
             aggregateSynsets = toSynset(unique_intersection(aggregate_relation_object,aggregate_relation_subject))
             #Get relationship ranks compared to the predicate family
             relationRanks = rankRelations(aggregateSynsets,predicateFamily)
@@ -152,26 +123,10 @@ def main():
                 print entry, query_collection[entry]
 
     pdb.set_trace()
-
+            '''
 
 
 
     
-
-
-
-
-
-
 if __name__ == "__main__":
     main()
-
-
-
-'''
-
-match (s:Object)-[:SUBJ]->(r:Relation)-[:OBJ]->(o:Object)
-where s.synset="leg.n.01"
-return s,r,o
-
-'''
