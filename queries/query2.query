@@ -1,0 +1,6 @@
+LocalID,LocalType,Synset,SubjectLocalID,ObjectLocalID
+1,n,man
+2,n,truck
+3,n,light
+1,r,in,1,2
+2,r,has,2,3

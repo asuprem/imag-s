@@ -1,0 +1,11 @@
+LocalID,LocalType,Synset,SubjectLocalID,ObjectLocalID
+1,n,man
+2,n,tree
+1,r,by,1,2
+3,n,short_pants
+2,r,wearing,1,3
+4,n,shirt
+3,r,wears,1,4
+5,n,girl
+4,r,by,5,1
+5,r,by,5,2
