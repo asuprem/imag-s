@@ -12,17 +12,13 @@ uri = "bolt://localhost:7687"
 driver = GraphDatabase.driver(uri, auth=("neo4j", "scientia"))
 
 # RUN by python retrieval.py query1.query
-
-def image_ids(query):
-    matchClause = 'match (s:fullObject)-[:SUBJ]->(r:fullRelation)-[:OBJ]->(o:fullObject)'
-    conditionClause = "where s.synset='"+str(query[0])+"' and "
-    conditionClause += "r.synset='"+str(query[1])+"' and "
-    conditionClause += "o.synset='"+str(query[2])+"' "
-    returnClause = 'return s.img'
-    ids = sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
-    #pdb.set_trace()
-    return [item['s.img'] for item in ids]
-
+def image_ids(approximate,object_ids,relation_ids,aggregate_ids,aggregate_image_ids):
+    subj = object_ids[approximate[0]]
+    pred = relation_ids[approximate[1]]
+    obj = object_ids[approximate[2]]
+    
+    ids = aggregate_ids[(pred,subj,obj)] if (pred,subj,obj) in aggregate_ids else []
+    return aggregate_image_ids[str(ids)] if ids else []
 def main():
 
     conn_obj = sqlite3.connect('../ExtractedData/' + 'objects' + '.db')
@@ -53,6 +49,8 @@ def main():
     #query_file_name = sys.argv[1]
     while 1:
         query_file_name = raw_input("Query file:  ")
+        query_file_name = 'queries/' + query_file_name + '.query'
+        start=time.time()
         #Get the relations and nouns
         relations = retrieval_utils.extractRelations(query_file_name)
         #----------------------------------------------------------------------------#
@@ -64,7 +62,6 @@ def main():
             objectFamily = objectFamilies.explore(relation[2])
             predicateFamily = relationFamilies.explore(relation[1])
             #pdb.set_trace()
-            start=time.time()
             #Get the cleaned up relations (i.e. without u'sdfdf' -> 'sdfdf')
             aggregate_relation_subject = retrieval_utils.synset_cleaned(retrieval_utils.subject_relations_approximates(subjectFamily.getFullRanking(),objectFamily.getFullRanking(), driver))
             aggregate_relation_object = retrieval_utils.synset_cleaned(retrieval_utils.object_relations_approximates(objectFamily.getFullRanking(),subjectFamily.getFullRanking(), driver))        
@@ -79,32 +76,38 @@ def main():
             queryApproximates[relation] = retrieval_utils.generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
 
         print 'Finished getting relations in ' + str(time.time()-start)
-        print '---------------------------------------------\n\n'
+        print '---------------------------------------------\n'
         #we have query approximates, and relations
         # we need to get images with the approximates in them.
         
 
 
-        pdb.set_trace()
+        #pdb.set_trace()
         image_collection={}
         query_collection = {}
         for query in relations:
             image_collection[query]={}
             for approximate in queryApproximates[query]:
-                image_collection[query][approximate] = image_ids(approximate)
+                #pdb.set_trace()        
+                image_collection[query][approximate] = image_ids(approximate,object_ids,relation_ids,aggregate_ids,aggregate_image_ids)
+                
+                
                 for ids in image_collection[query][approximate]:
                     if ids not in query_collection:
                         query_collection[ids] = {}
                     if query not in query_collection[ids]:
                         query_collection[ids][query]=[]
                     query_collection[ids][query].append(approximate)
+                
             print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
+        #pdb.set_trace()
         
         for entry in query_collection:
             if len(query_collection[entry])>1:
                 print entry, query_collection[entry]
-
-    pdb.set_trace()
+        print '---------------------------------------------\n'
+        #pdb.set_trace()
+    #pdb.set_trace()
 
 
 
