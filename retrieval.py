@@ -1,90 +1,17 @@
 import sys
+import sqlite3
 import operator
-import time
+import time, json
 from neo4j.v1 import GraphDatabase
 import pdb
 from synset_explorer import SynsetExplorer
-from nltk.corpus import wordnet as wn
-from nltk.corpus.reader.wordnet import WordNetError
-from itertools import product
+import retrieval_utils
 #import approximate_utils
 
 uri = "bolt://localhost:7687"
 driver = GraphDatabase.driver(uri, auth=("neo4j", "scientia"))
 
 # RUN by python retrieval.py query1.query
-
-def clauseJoin(matchClause,conditionClause,returnClause):
-    return matchClause+' '+conditionClause+' '+returnClause
-def synset_cleaned(neo4j_result):
-    return [item.values()[0]['synset'].encode("utf-8") for item in neo4j_result]
-def sessionRun(clause):
-    with driver.session() as session:
-        result = session.run(clause)
-    return result
-def subject_relations_approximates(subjects):
-    matchClause = 'match (n:aggregateObject)-[:SUBJ]->(r:aggregateRelation)'
-    conditionClause = 'where n.synset in '+str(subjects)
-    returnClause = 'return r'
-    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
-def object_relations_approximates(objects):
-    matchClause = 'match (r:aggregateRelation)-[:OBJ]->(o:aggregateObject)'
-    conditionClause = 'where o.synset in '+str(objects)
-    returnClause = 'return r'
-    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
-def ssag_object_approximates(subjects,relations):
-    matchClause = 'match (n:ssagObject)-[:SUBJ]->(r:ssagRelation)-[:OBJ]->(o:ssagObject)'
-    conditionClause = 'where n.synset in '+str(subjects) +'and r.synset in ' + str(relations)
-    returnClause = 'return o'
-    return sessionRun(clauseJoin(matchClause,conditionClause,returnClause))
-
-def generateRelations(gsubject,grelation,gobject):
-    #pdb.set_trace()
-    return list(product(gsubject,grelation,gobject))
-def extractRelations(query_file_name):
-    query_file = open(query_file_name,'r')
-    nouns = {}
-    predicates = {}
-    for line in query_file:
-        line = line.strip().split(',')
-        if line[1] == 'n':
-            nouns[int(line[0])] = line[2]
-        if line[1] == 'r':
-            predicates[int(line[0])] = (line[2],int(line[3]), int(line[4]))
-    query_file.close()
-    relations = []
-    for entry in predicates:
-        relations.append((nouns[predicates[entry][1]],predicates[entry][0],nouns[predicates[entry][2]]))
-    return relations
-def unique_intersection(aggregate_relation_object,aggregate_relation_subject):
-    aggregate_relations = aggregate_relation_subject+aggregate_relation_object
-    aggregate_relations = set([item for item in aggregate_relations if (item in aggregate_relation_subject and item in aggregate_relation_object)])
-    return aggregate_relations
-def toSynset(synsetList):
-    return [wn.synset(item) for item in synsetList]
-def predicate_summary(predicateFamily):
-    predicateCounts={}
-    for item in predicateFamily.getFullRanking():
-        predicateCounts[wn.synset(item)]= predicateFamily.getFamilySynsetCounts()[item] if item in predicateFamily.getFamilySynsetCounts() else predicateFamily.getTopLevelSynsetCounts()[item]
-    predicateSum = float(sum([predicateCounts[item] for item in predicateCounts]))
-    return predicateCounts,predicateSum
-def rankRelations(aggregateSynsets,predicateFamily):
-    predicateSynsets = toSynset(predicateFamily.getFullRanking())
-    predicateCounts, predicateSum = predicate_summary(predicateFamily)
-    rankingAverages=[]
-    for item in aggregateSynsets:
-        tSum = 0
-        for mains in predicateSynsets:
-            try:
-                tSum += item.wup_similarity(mains) * (predicateCounts[mains]/predicateSum)
-            except WordNetError:
-                tSum += 0
-            except TypeError:
-                tSum += 0
-        #tSum=sum(tSum)/len(predicateCounts)
-        rankingAverages.append((str(item)[8:-2],tSum))
-    rankingAverages = sorted(rankingAverages,key=lambda x:x[1],reverse=True)
-    return [item[0] for item in rankingAverages if item[1] >= (2./3)*rankingAverages[0][1]]
 
 def image_ids(query):
     matchClause = 'match (s:fullObject)-[:SUBJ]->(r:fullRelation)-[:OBJ]->(o:fullObject)'
@@ -98,13 +25,36 @@ def image_ids(query):
 
 def main():
 
+    conn_obj = sqlite3.connect('../ExtractedData/' + 'objects' + '.db')
+    conn_rel = sqlite3.connect('../ExtractedData/' + 'relations' + '.db')
+    conn_agg = sqlite3.connect('../ExtractedData/' + 'aggregate' + '.db')
+    rel_curs = conn_rel.cursor()
+    obj_curs = conn_obj.cursor()
+    aggregate_curs = conn_agg.cursor()
+
+
+    # these are global uniques
+    object_ids = dict(obj_curs.execute('Select synset,id from synset_count'))
+    relation_ids = dict(rel_curs.execute('Select synset,id from synset_count'))
+    temp_aggregate_ids = aggregate_curs.execute('Select rel_id,subj_id,obj_id,id from aggregate_id').fetchall()
+    aggregate_ids = {(item[0],item[1],item[2]):item[3] for item in temp_aggregate_ids}
+    temp_aggregate_ids = None
+
+
+
+
     objectFamilies = SynsetExplorer('../ExtractedData/objects.db')
     relationFamilies = SynsetExplorer('../ExtractedData/relations.db')
+    with open(sys.argv[1],'r') as id_file:
+        aggregate_image_ids = json.loads(id_file.read())
+    for entry in aggregate_image_ids:
+        aggregate_image_ids[entry] = [int(item) for item in aggregate_image_ids[entry]]
+    
     #query_file_name = sys.argv[1]
     while 1:
         query_file_name = raw_input("Query file:  ")
         #Get the relations and nouns
-        relations = extractRelations(query_file_name)
+        relations = retrieval_utils.extractRelations(query_file_name)
         #----------------------------------------------------------------------------#
         # USE the relation component approximates to generate relation approximates
         queryApproximates={}
@@ -116,23 +66,26 @@ def main():
             #pdb.set_trace()
             start=time.time()
             #Get the cleaned up relations (i.e. without u'sdfdf' -> 'sdfdf')
-            aggregate_relation_subject = synset_cleaned(subject_relations_approximates(subjectFamily.getFullRanking()))
-            aggregate_relation_object = synset_cleaned(object_relations_approximates(objectFamily.getFullRanking()))        
+            aggregate_relation_subject = retrieval_utils.synset_cleaned(retrieval_utils.subject_relations_approximates(subjectFamily.getFullRanking(),objectFamily.getFullRanking(), driver))
+            aggregate_relation_object = retrieval_utils.synset_cleaned(retrieval_utils.object_relations_approximates(objectFamily.getFullRanking(),subjectFamily.getFullRanking(), driver))        
             #Get the unique relations and the predicate relations and convert to synset format (for lch similarity)
             #pdb.set_trace()
-            aggregateSynsets = toSynset(unique_intersection(aggregate_relation_object,aggregate_relation_subject))
+            aggregateSynsets = retrieval_utils.toSynset(retrieval_utils.unique_intersection(aggregate_relation_object,aggregate_relation_subject))
             #Get relationship ranks compared to the predicate family
-            relationRanks = rankRelations(aggregateSynsets,predicateFamily)
+            relationRanks = retrieval_utils.rankRelations(aggregateSynsets,predicateFamily)
             #pdb.set_trace()
             # Mabe combine with hypo ranks????
             # We generate relations using base, first:
-            queryApproximates[relation] = generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
+            queryApproximates[relation] = retrieval_utils.generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
 
         print 'Finished getting relations in ' + str(time.time()-start)
         print '---------------------------------------------\n\n'
         #we have query approximates, and relations
         # we need to get images with the approximates in them.
         
+
+
+        pdb.set_trace()
         image_collection={}
         query_collection = {}
         for query in relations:
