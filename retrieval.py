@@ -61,16 +61,13 @@ def main():
             subjectFamily = objectFamilies.explore(relation[0])
             objectFamily = objectFamilies.explore(relation[2])
             predicateFamily = relationFamilies.explore(relation[1])
-            #pdb.set_trace()
             #Get the cleaned up relations (i.e. without u'sdfdf' -> 'sdfdf')
             aggregate_relation_subject = retrieval_utils.synset_cleaned(retrieval_utils.subject_relations_approximates(subjectFamily.getFullRanking(),objectFamily.getFullRanking(), driver))
             aggregate_relation_object = retrieval_utils.synset_cleaned(retrieval_utils.object_relations_approximates(objectFamily.getFullRanking(),subjectFamily.getFullRanking(), driver))        
             #Get the unique relations and the predicate relations and convert to synset format (for lch similarity)
-            #pdb.set_trace()
             aggregateSynsets = retrieval_utils.toSynset(retrieval_utils.unique_intersection(aggregate_relation_object,aggregate_relation_subject))
             #Get relationship ranks compared to the predicate family
             relationRanks = retrieval_utils.rankRelations(aggregateSynsets,predicateFamily)
-            #pdb.set_trace()
             # Mabe combine with hypo ranks????
             # We generate relations using base, first:
             queryApproximates[relation] = retrieval_utils.generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
@@ -102,32 +99,14 @@ def main():
             print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
         #pdb.set_trace()
         
+        out_counter = 0
         for entry in query_collection:
             if len(query_collection[entry])>1:
                 print entry, query_collection[entry]
+                out_counter+=1
+                if out_counter > 5:
+                    break
         print '---------------------------------------------\n'
-        #pdb.set_trace()
-    #pdb.set_trace()
-
-
-
-
-    
-
-
-
-
-
 
 if __name__ == "__main__":
     main()
-
-
-
-'''
-
-match (s:Object)-[:SUBJ]->(r:Relation)-[:OBJ]->(o:Object)
-where s.synset="leg.n.01"
-return s,r,o
-
-'''
