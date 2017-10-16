@@ -1,6 +1,56 @@
 from nltk.corpus import wordnet as wn
 from nltk.corpus.reader.wordnet import WordNetError
 from itertools import product
+import sqlite3
+
+
+def getApproximates(relations, objectFamilies, relationFamilies):
+    queryApproximates={}
+    for relation in relations:
+        #Get the explored synsets
+        subjectFamily = objectFamilies.explore(relation[0])
+        objectFamily = objectFamilies.explore(relation[2])
+        predicateFamily = relationFamilies.explore(relation[1])
+        #Get the cleaned up relations (i.e. without u'sdfdf' -> 'sdfdf')
+        aggregate_relation_subject = synset_cleaned(subject_relations_approximates(subjectFamily.getFullRanking(),objectFamily.getFullRanking(), driver))
+        aggregate_relation_object = synset_cleaned(object_relations_approximates(objectFamily.getFullRanking(),subjectFamily.getFullRanking(), driver))        
+        #Get the unique relations and the predicate relations and convert to synset format (for lch similarity)
+        aggregateSynsets = toSynset(unique_intersection(aggregate_relation_object,aggregate_relation_subject))
+        #Get relationship ranks compared to the predicate family
+        relationRanks = rankRelations(aggregateSynsets,predicateFamily)
+        # Mabe combine with hypo ranks????
+        # We generate relations using base, first:
+        queryApproximates[relation] = generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
+    return queryApproximates
+
+
+
+
+def get_node_ids(path):
+    cursor = get_cursors(path)
+    ids = dict(cursor.execute('Select synset,id from synset_count'))
+    cursor.close()
+    return ids
+def get_aggregate_ids(path):
+    aggregate_curs = get_cursors(path)
+    temp_aggregate_ids = aggregate_curs.execute('Select rel_id,subj_id,obj_id,id from aggregate_id').fetchall()
+    aggregate_ids = {(item[0],item[1],item[2]):item[3] for item in temp_aggregate_ids}
+    temp_aggregate_ids = None
+    aggregate_curs.close()
+    return aggregate_ids
+
+def get_aggregate_image_ids(path):
+    with open(path,'r') as id_file:
+        aggregate_image_ids = json.loads(id_file.read())
+    for entry in aggregate_image_ids:
+        aggregate_image_ids[entry] = [int(item) for item in aggregate_image_ids[entry]]
+    return aggregate_image_ids
+    
+
+def get_cursors(path):
+    conn_obj = sqlite3.connect(path)
+    return conn_obj.cursor()
+
 
 
 
