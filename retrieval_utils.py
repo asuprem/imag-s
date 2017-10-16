@@ -2,9 +2,43 @@ from nltk.corpus import wordnet as wn
 from nltk.corpus.reader.wordnet import WordNetError
 from itertools import product
 import sqlite3
+import json
+import pdb
+class BaseModel:
+    def __init__(self, subject, predicate, _object):
+        self.model = (subject, predicate,_object)
+        self.subject = wn.synset(subject)
+        self.predicate = wn.synset(predicate)
+        self.object = wn.synset(_object)
+    def rank(self,relation):
+        subject = wn.synset(relation[0])
+        predicate = wn.synset(relation[1])
+        _object = wn.synset(relation[2])
+
+        subjSimilarity = self.subject.lch_similarity(subject)
+        objSimilarity = self.object.lch_similarity(_object)
+        predSimilarity = self.predicate.lch_similarity(predicate)
+        if not predSimilarity:
+            predSimilarity=1
+        return subjSimilarity*predSimilarity*objSimilarity
+    def getModel(self):
+        return self.model
+
+class RankedRelation:
+    def __init__(self,model,relation, rank):
+        self.model=model
+        self.relation=relation
+        self.rank=rank
+    def getRank(self):
+        return self.rank
+    def getModel(self):
+        return self.model
+    def getRelation(self):
+        return self.relation
+    
 
 
-def getApproximates(relations, objectFamilies, relationFamilies):
+def getApproximates(relations, objectFamilies, relationFamilies, driver):
     queryApproximates={}
     for relation in relations:
         #Get the explored synsets
@@ -20,7 +54,13 @@ def getApproximates(relations, objectFamilies, relationFamilies):
         relationRanks = rankRelations(aggregateSynsets,predicateFamily)
         # Mabe combine with hypo ranks????
         # We generate relations using base, first:
-        queryApproximates[relation] = generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
+        #pdb.set_trace()
+        baseModel = BaseModel(subjectFamily.getBaseRanking()[0], predicateFamily.getBaseRanking()[0], objectFamily.getBaseRanking()[0])
+        relationList = generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
+        queryApproximates[relation]=[]
+        for unrankedRelation in relationList:
+            queryApproximates[relation].append(RankedRelation(baseModel.getModel(),  unrankedRelation, baseModel.rank(unrankedRelation)))
+        #pdb.set_trace()
     return queryApproximates
 
 

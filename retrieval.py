@@ -1,11 +1,13 @@
 import sys
+from nltk.corpus import wordnet as wn
+from nltk.corpus.reader.wordnet import WordNetError
 import sqlite3
 import operator
-import time, json
+import time
 from neo4j.v1 import GraphDatabase
 import pdb
 from synset_explorer import SynsetExplorer
-from synset_explorer import Families
+#from synset_explorer import Families
 import retrieval_utils
 #import approximate_utils
 
@@ -43,14 +45,15 @@ def main():
         start=time.time()
         #Get the relations and nouns
         relations = retrieval_utils.extractRelations(query_file_name)
+        #pdb.set_trace()
         # USE the relation component approximates to generate relation approximates
-        queryApproximates = retrieval_utils.getApproximates(relations, objectFamilies, relationFamilies)
-
+        queryApproximates = retrieval_utils.getApproximates(relations, objectFamilies, relationFamilies,driver)
+        #pdb.set_trace()
         print 'Finished getting relations in ' + str(time.time()-start)
         print '---------------------------------------------\n'
         # we need to get images with the approximates in them.
 
-
+        
         #pdb.set_trace()
         image_collection={}
         query_collection = {}
@@ -58,7 +61,7 @@ def main():
             image_collection[query]={}
             for approximate in queryApproximates[query]:
                 #pdb.set_trace()        
-                image_collection[query][approximate] = image_ids(approximate,object_ids,relation_ids,aggregate_ids,aggregate_image_ids)
+                image_collection[query][approximate] = image_ids(approximate.getRelation(),object_ids,relation_ids,aggregate_ids,aggregate_image_ids)
                 
                 
                 for ids in image_collection[query][approximate]:
@@ -70,15 +73,28 @@ def main():
                 
             print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
         
-        
+        #pdb.set_trace()
         out_counter = 0
-        for entry in query_collection:
-            if len(query_collection[entry])>1:
-                print entry, query_collection[entry]
-                out_counter+=1
-                if out_counter > 5:
-                    break
-        print '---------------------------------------------\n'
+        images_ranked={}
+        for vgm_image_id in query_collection:
 
+            query_list = [item for item in query_collection[vgm_image_id]]
+            image_rank = 1
+            for query in query_list:
+                query_ranks = [item.getRank() for item in query_collection[vgm_image_id][query]]
+                image_rank*=max(query_ranks)
+            images_ranked[vgm_image_id] = image_rank
+            '''
+            if len(query_collection[entry])>1:
+                
+            '''
+        ranked_images = [item[0] for item in sorted(images_ranked.items(), key=operator.itemgetter(1), reverse=True)]
+        for item in ranked_images:
+            print item
+            out_counter+=1
+            if out_counter > 20:
+                break
+        print '---------------------------------------------\n'
+        
 if __name__ == "__main__":
     main()
