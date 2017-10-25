@@ -10,14 +10,19 @@ class BaseModel:
         self.subject = wn.synset(subject)
         self.predicate = wn.synset(predicate)
         self.object = wn.synset(_object)
+    def synCompare(self,syn1,syn2):
+        return syn1[-4:-3] == syn2[-4:-3]
     def rank(self,relation):
         subject = wn.synset(relation[0])
         predicate = wn.synset(relation[1])
         _object = wn.synset(relation[2])
-
-        subjSimilarity = self.subject.lch_similarity(subject)
-        objSimilarity = self.object.lch_similarity(_object)
-        predSimilarity = self.predicate.lch_similarity(predicate)
+        subjSimilarity, objSimilarity,predSimilarity = 1,1,1
+        if self.synCompare(self.model[0],relation[0]):
+            subjSimilarity = self.subject.lch_similarity(subject)
+        if self.synCompare(self.model[2],relation[2]):
+            objSimilarity = self.object.lch_similarity(_object)
+        if self.synCompare(self.model[1],relation[1]):
+            predSimilarity = self.predicate.lch_similarity(predicate)
         if not predSimilarity:
             predSimilarity=1
         return subjSimilarity*predSimilarity*objSimilarity
@@ -46,8 +51,8 @@ def getApproximates(relations, objectFamilies, relationFamilies, driver):
         objectFamily = objectFamilies.explore(relation[2])
         predicateFamily = relationFamilies.explore(relation[1])
         #Get the cleaned up relations (i.e. without u'sdfdf' -> 'sdfdf')
-        aggregate_relation_subject = synset_cleaned(subject_relations_approximates(subjectFamily.getFullRanking(),objectFamily.getFullRanking(), driver))
-        aggregate_relation_object = synset_cleaned(object_relations_approximates(objectFamily.getFullRanking(),subjectFamily.getFullRanking(), driver))        
+        aggregate_relation_subject = synset_cleaned(subject_relations_approximates(subjectFamily.getBaseHypoRanking(),objectFamily.getBaseHypoRanking(), driver))
+        aggregate_relation_object = synset_cleaned(object_relations_approximates(objectFamily.getBaseHypoRanking(),subjectFamily.getBaseHypoRanking(), driver))        
         #Get the unique relations and the predicate relations and convert to synset format (for lch similarity)
         aggregateSynsets = toSynset(unique_intersection(aggregate_relation_object,aggregate_relation_subject))
         #Get relationship ranks compared to the predicate family
@@ -56,7 +61,7 @@ def getApproximates(relations, objectFamilies, relationFamilies, driver):
         # We generate relations using base, first:
         #pdb.set_trace()
         baseModel = BaseModel(subjectFamily.getBaseRanking()[0], predicateFamily.getBaseRanking()[0], objectFamily.getBaseRanking()[0])
-        relationList = generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
+        relationList = generateRelations(subjectFamily.getBaseHypoRanking(), relationRanks, objectFamily.getBaseHypoRanking())
         queryApproximates[relation]=[]
         for unrankedRelation in relationList:
             queryApproximates[relation].append(RankedRelation(baseModel.getModel(),  unrankedRelation, baseModel.rank(unrankedRelation)))

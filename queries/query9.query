@@ -1,0 +1,9 @@
+LocalID,LocalType,Synset,SubjectLocalID,ObjectLocalID
+1,n,chicken
+2,n,plate
+3,n,salad
+4,n,tomato
+5,n,plate
+1,r,along,1,2
+2,r,in,3,5
+3,r,in,4,3

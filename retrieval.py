@@ -90,7 +90,8 @@ def main():
             '''
         ranked_images = [item[0] for item in sorted(images_ranked.items(), key=operator.itemgetter(1), reverse=True)]
         for item in ranked_images:
-            print item
+            #pdb.set_trace()
+            print item, [(mod, [(subitem.getModel(),subitem.getRank()) for subitem in query_collection[item][mod]]) for mod in query_collection[item]]
             out_counter+=1
             if out_counter > 20:
                 break
