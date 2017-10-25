@@ -1,17 +1,21 @@
 import sys
+from nltk.corpus import wordnet as wn
+from nltk.corpus.reader.wordnet import WordNetError
 import sqlite3
 import operator
-import time, json
+import time
 from neo4j.v1 import GraphDatabase
 import pdb
 from synset_explorer import SynsetExplorer
+#from synset_explorer import Families
 import retrieval_utils
 #import approximate_utils
 
 uri = "bolt://localhost:7687"
 driver = GraphDatabase.driver(uri, auth=("neo4j", "scientia"))
 
-# RUN by python retrieval.py query1.query
+# python retrieval.py ../ExtractedData/aggregate_image_ids.vgm
+
 def image_ids(approximate,object_ids,relation_ids,aggregate_ids,aggregate_image_ids):
     subj = object_ids[approximate[0]]
     pred = relation_ids[approximate[1]]
@@ -21,30 +25,18 @@ def image_ids(approximate,object_ids,relation_ids,aggregate_ids,aggregate_image_
     return aggregate_image_ids[str(ids)] if ids else []
 def main():
 
-    conn_obj = sqlite3.connect('../ExtractedData/' + 'objects' + '.db')
-    conn_rel = sqlite3.connect('../ExtractedData/' + 'relations' + '.db')
-    conn_agg = sqlite3.connect('../ExtractedData/' + 'aggregate' + '.db')
-    rel_curs = conn_rel.cursor()
-    obj_curs = conn_obj.cursor()
-    aggregate_curs = conn_agg.cursor()
-
-
-    # these are global uniques
-    object_ids = dict(obj_curs.execute('Select synset,id from synset_count'))
-    relation_ids = dict(rel_curs.execute('Select synset,id from synset_count'))
-    temp_aggregate_ids = aggregate_curs.execute('Select rel_id,subj_id,obj_id,id from aggregate_id').fetchall()
-    aggregate_ids = {(item[0],item[1],item[2]):item[3] for item in temp_aggregate_ids}
-    temp_aggregate_ids = None
-
-
-
+    objectsdb_path   = '../ExtractedData/' + 'objects'   + '.db'
+    relationsdb_path = '../ExtractedData/' + 'relations' + '.db'
+    aggregatedb_path = '../ExtractedData/' + 'aggregate' + '.db'
+    
+    object_ids = retrieval_utils.get_node_ids(objectsdb_path)
+    relation_ids = retrieval_utils.get_node_ids(relationsdb_path)
+    aggregate_ids = retrieval_utils.get_aggregate_ids(aggregatedb_path)
+    aggregate_image_ids = retrieval_utils.get_aggregate_image_ids(sys.argv[1])
 
     objectFamilies = SynsetExplorer('../ExtractedData/objects.db')
     relationFamilies = SynsetExplorer('../ExtractedData/relations.db')
-    with open(sys.argv[1],'r') as id_file:
-        aggregate_image_ids = json.loads(id_file.read())
-    for entry in aggregate_image_ids:
-        aggregate_image_ids[entry] = [int(item) for item in aggregate_image_ids[entry]]
+    
     
     #query_file_name = sys.argv[1]
     while 1:
@@ -53,32 +45,15 @@ def main():
         start=time.time()
         #Get the relations and nouns
         relations = retrieval_utils.extractRelations(query_file_name)
-        #----------------------------------------------------------------------------#
+        #pdb.set_trace()
         # USE the relation component approximates to generate relation approximates
-        queryApproximates={}
-        for relation in relations:
-            #Get the explored synsets
-            subjectFamily = objectFamilies.explore(relation[0])
-            objectFamily = objectFamilies.explore(relation[2])
-            predicateFamily = relationFamilies.explore(relation[1])
-            #Get the cleaned up relations (i.e. without u'sdfdf' -> 'sdfdf')
-            aggregate_relation_subject = retrieval_utils.synset_cleaned(retrieval_utils.subject_relations_approximates(subjectFamily.getFullRanking(),objectFamily.getFullRanking(), driver))
-            aggregate_relation_object = retrieval_utils.synset_cleaned(retrieval_utils.object_relations_approximates(objectFamily.getFullRanking(),subjectFamily.getFullRanking(), driver))        
-            #Get the unique relations and the predicate relations and convert to synset format (for lch similarity)
-            aggregateSynsets = retrieval_utils.toSynset(retrieval_utils.unique_intersection(aggregate_relation_object,aggregate_relation_subject))
-            #Get relationship ranks compared to the predicate family
-            relationRanks = retrieval_utils.rankRelations(aggregateSynsets,predicateFamily)
-            # Mabe combine with hypo ranks????
-            # We generate relations using base, first:
-            queryApproximates[relation] = retrieval_utils.generateRelations(subjectFamily.getFullRanking(), relationRanks, objectFamily.getFullRanking())
-
+        queryApproximates = retrieval_utils.getApproximates(relations, objectFamilies, relationFamilies,driver)
+        #pdb.set_trace()
         print 'Finished getting relations in ' + str(time.time()-start)
         print '---------------------------------------------\n'
-        #we have query approximates, and relations
         # we need to get images with the approximates in them.
+
         
-
-
         #pdb.set_trace()
         image_collection={}
         query_collection = {}
@@ -86,7 +61,7 @@ def main():
             image_collection[query]={}
             for approximate in queryApproximates[query]:
                 #pdb.set_trace()        
-                image_collection[query][approximate] = image_ids(approximate,object_ids,relation_ids,aggregate_ids,aggregate_image_ids)
+                image_collection[query][approximate] = image_ids(approximate.getRelation(),object_ids,relation_ids,aggregate_ids,aggregate_image_ids)
                 
                 
                 for ids in image_collection[query][approximate]:
@@ -97,16 +72,30 @@ def main():
                     query_collection[ids][query].append(approximate)
                 
             print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
-        #pdb.set_trace()
         
+        #pdb.set_trace()
         out_counter = 0
-        for entry in query_collection:
-            if len(query_collection[entry])>1:
-                print entry, query_collection[entry]
-                out_counter+=1
-                if out_counter > 5:
-                    break
-        print '---------------------------------------------\n'
+        images_ranked={}
+        for vgm_image_id in query_collection:
 
+            query_list = [item for item in query_collection[vgm_image_id]]
+            image_rank = 1
+            for query in query_list:
+                query_ranks = [item.getRank() for item in query_collection[vgm_image_id][query]]
+                image_rank*=max(query_ranks)
+            images_ranked[vgm_image_id] = image_rank
+            '''
+            if len(query_collection[entry])>1:
+                
+            '''
+        ranked_images = [item[0] for item in sorted(images_ranked.items(), key=operator.itemgetter(1), reverse=True)]
+        for item in ranked_images:
+            #pdb.set_trace()
+            print item, [(mod, [(subitem.getModel(),subitem.getRank()) for subitem in query_collection[item][mod]]) for mod in query_collection[item]]
+            out_counter+=1
+            if out_counter > 20:
+                break
+        print '---------------------------------------------\n'
+        
 if __name__ == "__main__":
     main()

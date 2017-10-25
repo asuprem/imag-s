@@ -3,6 +3,8 @@ from nltk.corpus import wordnet as wn
 import sqlite3
 import operator
 
+
+
 #We need to limit the info we send back
 class WordFamily:
     def __init__(self,word):
@@ -142,4 +144,3 @@ class SynsetExplorer:
         node.createRankings()
         
         return node
-        

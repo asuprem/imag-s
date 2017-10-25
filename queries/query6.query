@@ -1,0 +1,9 @@
+LocalID,LocalType,Synset,SubjectLocalID,ObjectLocalID
+1,n,adult
+2,n,dog
+3,n,squirrel
+4,n,tree
+5,n,grass
+1,r,holding,1,2
+2,r,by,3,5
+3,r,along,3,4
