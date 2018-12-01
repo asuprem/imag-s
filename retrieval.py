@@ -25,17 +25,17 @@ def image_ids(approximate,object_ids,relation_ids,aggregate_ids,aggregate_image_
     return aggregate_image_ids[str(ids)] if ids else []
 def main():
 
-    objectsdb_path   = '../ExtractedData/' + 'objects'   + '.db'
-    relationsdb_path = '../ExtractedData/' + 'relations' + '.db'
-    aggregatedb_path = '../ExtractedData/' + 'aggregate' + '.db'
+    objectsdb_path   = 'databases/' + 'objects'   + '.db'
+    relationsdb_path = 'databases/' + 'relations' + '.db'
+    aggregatedb_path = 'databases/' + 'aggregate' + '.db'
     
     object_ids = retrieval_utils.get_node_ids(objectsdb_path)
     relation_ids = retrieval_utils.get_node_ids(relationsdb_path)
     aggregate_ids = retrieval_utils.get_aggregate_ids(aggregatedb_path)
     aggregate_image_ids = retrieval_utils.get_aggregate_image_ids(sys.argv[1])
 
-    objectFamilies = SynsetExplorer('../ExtractedData/objects.db')
-    relationFamilies = SynsetExplorer('../ExtractedData/relations.db')
+    objectFamilies = SynsetExplorer(objectsdb_path)
+    relationFamilies = SynsetExplorer(relationsdb_path)
     
     
     #query_file_name = sys.argv[1]

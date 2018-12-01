@@ -150,7 +150,7 @@ def toSynset(synsetList):
 def predicate_summary(predicateFamily):
     predicateCounts={}
     for item in predicateFamily.getFullRanking():
-        predicateCounts[wn.synset(item)]= predicateFamily.getFamilySynsetCounts()[item] if item in predicateFamily.getFamilySynsetCounts() else predicateFamily.getTopLevelSynsetCounts()[item]
+        predicateCounts[wn.synset(item)]= predicateFamily.getFamilySynsetCounts()[item] if item in predicateFamily.getFamilySynsetCounts() else predicateFamily.getSisterSynsetCounts()[item]
     predicateSum = float(sum([predicateCounts[item] for item in predicateCounts]))
     return predicateCounts,predicateSum
 def rankRelations(aggregateSynsets,predicateFamily):

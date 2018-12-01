@@ -9,19 +9,19 @@ import operator
 class WordFamily:
     def __init__(self,word):
         self.word = word
-        self.topLevelFamily=[]
+        self.sisters=[]
         self.hypoRanks=[]
         self.hyperRanks=[]
-    def setTopLevel(self,topLevel):
-        self.topLevelFamily = topLevel
+    def setSisters(self,sisters):
+        self.sisters = sisters
     def setHypoRanks(self,hypoRanks):
-        hypoRanks = [item for item in hypoRanks if item not in self.getTopLevel()]
+        hypoRanks = [item for item in hypoRanks if item not in self.getSisters()]
         self.hypoRanks=hypoRanks
     def setHyperRanks(self,hyperRanks):
-        hyperRanks = [item for item in hyperRanks if item not in self.getTopLevel()]
+        hyperRanks = [item for item in hyperRanks if item not in self.getSisters()]
         self.hyperRanks=hyperRanks
-    def getTopLevel(self):
-        return self.topLevelFamily
+    def getSisters(self):
+        return self.sisters
     def getHyperRanks(self):
         return self.hyperRanks
     def getHypoRanks(self):
@@ -34,7 +34,7 @@ class WordFamily:
         self.fullRanking = self.getBaseHypoRanking()+self.getHyperRanks()
 
     def getBaseRanking(self):
-        return self.topLevelFamily
+        return self.sisters
     def getBaseHyperRanking(self):
         return self.baseHyperRanking
     def getBaseHypoRanking(self):
@@ -43,12 +43,12 @@ class WordFamily:
         return self.fullRanking
     def setFamilySynsetCounts(self,familySynsetCounts):
         self.familySynsetCounts=familySynsetCounts
-    def setTopLevelSynsetCounts(self,topLevelSynsetCounts):
-        self.topLevelSynsetCounts=topLevelSynsetCounts
+    def setSisterSynsetCounts(self,sisterSynsetCounts):
+        self.sisterSynsetCounts=sisterSynsetCounts
     def getFamilySynsetCounts(self):
         return self.familySynsetCounts
-    def getTopLevelSynsetCounts(self):
-        return self.topLevelSynsetCounts
+    def getSisterSynsetCounts(self):
+        return self.sisterSynsetCounts
 class SynsetExplorer:
     
     def __init__(self,database_file):
@@ -80,29 +80,32 @@ class SynsetExplorer:
         return sorted(rank_list.items(), key=operator.itemgetter(1), reverse=True)
     def synset_extract(self,synsets):
         return [str(synset)[8:-2] for synset in synsets]
-    def get_family_rankings(self, word_list):
+    def get_family_rankings(self, _synset_list):
         hypo_extended, hyper_extended = set(), set()
         hypo_ranks, hyper_ranks = [],[]
         family = set()
-
-        for word in word_list:
+        #this gets the extended hypo and hypernims of the source natural word's synsets <---- PLURAL
+        for _synset in _synset_list:
             #hypo_family = self.closure(word, self.hypo)
             #hyper_family = self.closure(word, self.hyper)
-            hypo_family = set(word.hyponyms())
-            hyper_family = set(word.hypernyms())
-
+            #hypo are child synsets
+            hypo_family = set(_synset.hyponyms())
+            #hyper are parent synsets
+            hyper_family = set(_synset.hypernyms())
+            #extend the set for each synset of the source natural word
             hypo_extended |= hypo_family
             hyper_extended |= hyper_family
-
+            #add both hypo and hypeer to family - which is the parent and child synsets of all sister synsets of source natural word
             family |= hypo_family
             family |= hyper_family
 
-            hypo_ranking = self.ranking(word,hypo_family)
-            hyper_ranking = self.ranking(word, hyper_family)
-
+            #here, wup similarity between source ntural word synset and all synsets in child family <--- TODO convert to w2v
+            hypo_ranking = self.ranking(_synset,hypo_family)
+            hyper_ranking = self.ranking(_synset, hyper_family)
+            #sort the ranks and append them to hypo/hyper_ranks in sourted order (sorted in decending order <--- larger is more similar)
             hypo_ranks.append(self.ranking_sort(hypo_ranking))
             hyper_ranks.append(self.ranking_sort(hyper_ranking))
-
+        #get just the natural synset, instead of object, i.e. Synset('adonis.n.01') --> 'adonis.n.01'
         family_list = self.synset_extract(family)
         #spdb.set_trace()
         return family_list, hypo_ranks, hyper_ranks
@@ -110,7 +113,7 @@ class SynsetExplorer:
     def cleaned(self,word):
         return word.replace(' ','_')
     #Sort by distance
-    def reduce(self,inputList,rankingCount):
+    def _reduce(self,inputList,rankingCount):
         setVerify={}
         returnList=[]
         for item in inputList:
@@ -121,26 +124,31 @@ class SynsetExplorer:
     def sort(self,rankedList):
         return [sortItem[0] for sortItem in sorted([item for subList in rankedList for item in subList],key=lambda x:x[1],reverse=True)]
 
+    '''
     def updateRankings(self,rankList, setVerify, inputList, rankingCount):
         for entry in inputList:
             if entry not in setVerify:
                 rankList.append((entry,rankingCount[entry]))
                 setVerify[entry]=1
-
+    '''
     def explore(self,word):
         node = WordFamily(word)
         wordList = self.get_synset(self.cleaned(node.getWord()))
+        #see comments inside function
         family, hypoRanks, hyperRanks = self.get_family_rankings(wordList)
-        topLevels = self.synset_extract(wordList)
+        sisters = self.synset_extract(wordList)
+        #this is the number of times the synset exists?
+        #toplevel vs Family --> toplevel is sister; family is everything
         node.setFamilySynsetCounts(self.get_counts(family))
-        node.setTopLevelSynsetCounts(self.get_counts(topLevels))
+        node.setSisterSynsetCounts(self.get_counts(sisters))
 
-        setVerify={}
+        #setVerify={}
         rankList = []
-
-        node.setTopLevel(self.reduce(topLevels, node.getTopLevelSynsetCounts()))
-        node.setHypoRanks(self.reduce(self.sort(hypoRanks),node.getFamilySynsetCounts()))
-        node.setHyperRanks(self.reduce(self.sort(hyperRanks),node.getFamilySynsetCounts()))
+        #so for each hypoRank/toplevel, if it is in the Family or sisters, then set() it
+        node.setSisters(self._reduce(sisters, node.getSisterSynsetCounts()))
+        node.setHypoRanks(self._reduce(self.sort(hypoRanks),node.getFamilySynsetCounts()))
+        node.setHyperRanks(self._reduce(self.sort(hyperRanks),node.getFamilySynsetCounts()))
+        #this creates baseHypo, Full, and BaseHyper Ranks
         node.createRankings()
         
         return node
