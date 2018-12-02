@@ -1,0 +1,1 @@
+{"nodes": [{"id": 2, "title": "man", "x": 169, "y": 159, "class": "noun"}, {"id": 3, "title": "truck", "x": 276, "y": 237, "class": "noun"}, {"id": 4, "title": "on", "x": 373, "y": 75, "class": "rel"}], "edges": [{"source": 2, "target": 4}, {"source": 4, "target": 3}]}
