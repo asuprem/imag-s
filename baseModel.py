@@ -18,14 +18,12 @@ class BaseModel:
         predicate = wn.synset(relation[1])
         _object = wn.synset(relation[2])
         subjSimilarity, objSimilarity,predSimilarity = 1,1,1
+        #so we will adjust this now to perform cos_sim. For this, we need the dictionary...
         if self.synCompare(self.model[0],relation[0]):
-            pdb.set_trace()
             subjSimilarity = self.subject.lch_similarity(subject)
         if self.synCompare(self.model[2],relation[2]):
-            pdb.set_trace()
             objSimilarity = self.object.lch_similarity(_object)
         if self.synCompare(self.model[1],relation[1]):
-            pdb.set_trace()
             predSimilarity = self.predicate.lch_similarity(predicate)
         if not predSimilarity:
             predSimilarity=1
