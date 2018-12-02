@@ -1,24 +1,48 @@
-## Environment Installation
+# IMAG-S: Image Matching with Approximate Graph Search
 
-We are setting up a virtual environment. We will call it IMAG-S for **I**mage **M**atching with **A**pproximate **G**raph **S**earch
+The IMAG-S platform allows one to perform fast approximate image retrieval ussing approximate graph search on scene graphs. We do not cover cache and database setup here. Instead, this repository only discusses setup and execution options for the IMAG-S platform. We assume Step 0 is completed.
 
-Packages to install:
-- nltk
-- sqlite3 <-- Maybe not?>
-- neo4j-driver
+**Step 0** refers to following the instructions in the neo-csv-gen repository's `Code Steps.md` file.
 
-## Setup
+## Requirements
 
-We need the `objects.db`, `relations.db`, `aggregate.db` databases into the databases folder. These will be used in `retrieval.py`
+We cover package, file, database, and software requirements to set up and run the program.
 
-    $ python
+### Package Requirements
+All packages can be found in `requirements.txt`. A virtual environment is highly recommended. For the NLTK package, you eed to download the NLTK wordnet corpus.
+
+#### NLTK Wordnet Corpus
+Start python in the virtual environment with the NLTK package installed.
+
     $ import nltk
-    $ nltk_download('wordnet')
+    $ nltk.download('wordnet')
+
+### File Requirements
+The top level directory requires a `databases` folder with the following files generated from Step 0.
+
+- `aggregate_image_ids.vgm`
+- `image_urls.json`
+
+### Database Requirements
+The `databases` folder also requires the following non-text files:
+
+- `aggregate.db`
+- `objects.db`
+- `relations.db`
+- `GoogleNews-vectors-negative300.bin`
+- `wn_embedding.h5`
+
+### Software Requirements
+A Neo4J server must be running with the aggregate graph databases already imported <-- TODO ADD DETAILS -->
+
+
 
 ## Execution
-Make sure the server is up, actually. Also make sure the VMG files are in the import folder, and import them using the CQLs.
+We will describe both example and UI,
 
-    $ cypher-shell -u neo4j -p scientia < CQL\*.bat
+### Example
+`tester.py` performs a sample run of the Image Retriever. You may replace the query in the file with queries of your own from the `queries` folder. The file can also be modified to keep running queries. The first query of a session always takes the longest as the backend must setup a cache for graph search.
 
-    $ workon IMAGS
-    $ python retrieval.py
+The setup takes ~3-4 minutes.
+
+### UI

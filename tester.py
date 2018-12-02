@@ -6,14 +6,13 @@ from utils import imageURL
 
 if __name__ == "__main__":
 
-    URL = imageURL.ImageURL('data/image_urls.json')
-    pdb.set_trace()
+    URL = imageURL.ImageURL('databases/image_urls.json')
     objectsdb_path   = 'databases/' + 'objects'   + '.db'
     relationsdb_path = 'databases/' + 'relations' + '.db'
     aggregatedb_path = 'databases/' + 'aggregate' + '.db'
     aggregate_path = 'databases/aggregate_image_ids.vgm'
-    w2v_path = 'GoogleNews-vectors-negative300.bin'
-    embedding_path = 'wn_embedding.h5'
+    w2v_path = 'databases/GoogleNews-vectors-negative300.bin'
+    embedding_path = 'databases/wn_embedding.h5'
     IMAG = retriever.Retriever(objectsdb_path,relationsdb_path,aggregatedb_path,aggregate_path, w2v_path, embedding_path)
 
     uri = "bolt://localhost:7687"
