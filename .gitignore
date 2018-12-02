@@ -54,3 +54,5 @@ databases/*.h5
 
 Google*.bin
 *.h5
+
+*.pyc
