@@ -2,6 +2,7 @@ import sys
 from nltk.corpus import wordnet as wn
 from nltk.corpus.reader.wordnet import WordNetError
 import sqlite3
+from itertools import product
 import operator
 import time
 import json
@@ -119,8 +120,7 @@ class Retriever:
             relationRanks = self.rankRelations(aggregateSynsets,predicateFamily)
             # Mabe combine with hypo ranks????
             # We generate relations using base, first:
-            #pdb.set_trace()
-            baseModel = BaseModel(subjectFamily.getBaseRanking()[0], predicateFamily.getBaseRanking()[0], objectFamily.getBaseRanking()[0])
+            baseModel = BaseModel(subjectFamily, predicateFamily, objectFamily)
             #generate relations creates the approximates using top ranked relations and subjFamily and objFamily hypos
             relationList = self.generateRelations(subjectFamily.getBaseHypoRanking(), relationRanks, objectFamily.getBaseHypoRanking())
             queryApproximates[relation]=[]
@@ -184,6 +184,8 @@ class Retriever:
                 try:
                     #TODO update ranking function
                     #similarity between approximate and query relation sisters, weighted by count of sisters
+                    #pdb.set_trace()
+                    #synset to synset distance
                     tSum += item.wup_similarity(mains) * (predicateCounts[mains]/predicateSum)
                 except WordNetError:
                     tSum += 0

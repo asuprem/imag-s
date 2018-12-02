@@ -2,13 +2,15 @@
 
 from nltk.corpus import wordnet as wn
 from nltk.corpus.reader.wordnet import WordNetError
-
+import pdb
 class BaseModel:
     def __init__(self, subject, predicate, _object):
-        self.model = (subject, predicate,_object)
-        self.subject = wn.synset(subject)
-        self.predicate = wn.synset(predicate)
-        self.object = wn.synset(_object)
+        #subjectFamily.getBaseRanking()[0], predicateFamily.getBaseRanking()[0], objectFamily.getBaseRanking()[0]
+        self.natural_model = (subject.word,predicate.word,_object.word)
+        self.model = (subject.getBaseRanking()[0], predicate.getBaseRanking()[0],_object.getBaseRanking()[0])
+        self.subject = wn.synset(self.model[0])
+        self.predicate = wn.synset(self.model[1])
+        self.object = wn.synset(self.model[2])
     def synCompare(self,syn1,syn2):
         return syn1[-4:-3] == syn2[-4:-3]
     def rank(self,relation):
@@ -17,10 +19,13 @@ class BaseModel:
         _object = wn.synset(relation[2])
         subjSimilarity, objSimilarity,predSimilarity = 1,1,1
         if self.synCompare(self.model[0],relation[0]):
+            pdb.set_trace()
             subjSimilarity = self.subject.lch_similarity(subject)
         if self.synCompare(self.model[2],relation[2]):
+            pdb.set_trace()
             objSimilarity = self.object.lch_similarity(_object)
         if self.synCompare(self.model[1],relation[1]):
+            pdb.set_trace()
             predSimilarity = self.predicate.lch_similarity(predicate)
         if not predSimilarity:
             predSimilarity=1

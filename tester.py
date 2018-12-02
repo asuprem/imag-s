@@ -20,6 +20,6 @@ if __name__ == "__main__":
     with open('queries/query2.query', 'r') as q_file:
         q_file.readline()
         query = q_file.read()
-    
+    #pdb.set_trace()
     image_ids = IMAG.getQuery(query)
     pdb.set_trace()
