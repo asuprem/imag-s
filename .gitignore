@@ -27,7 +27,6 @@ $RECYCLE.BIN/
 .DS_Store
 .AppleDouble
 .LSOverride
-Google*.bin
 
 # Thumbnails
 ._*
@@ -50,3 +49,6 @@ Temporary Items
 
 # Specific stuff
 databases/*
+
+Google*.bin
+*.h5
