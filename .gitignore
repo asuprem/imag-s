@@ -48,7 +48,9 @@ Temporary Items
 
 
 # Specific stuff
-databases/*
+databases/*.db
+databases/*.bin
+databases/*.h5
 
 Google*.bin
 *.h5
