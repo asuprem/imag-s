@@ -1,19 +1,14 @@
-import sys
+import sys, time, json, pdb, operator, sqlite3 h5utils
 from nltk.corpus import wordnet as wn
 from nltk.corpus.reader.wordnet import WordNetError
-import sqlite3
 from itertools import product
-import operator
-import time
-import json
 from neo4j.v1 import GraphDatabase
-import pdb
 from synset_explorer import SynsetExplorer
 from rankedRelation import RankedRelation
 from baseModel import BaseModel
 from gensim.models import KeyedVectors
 from gensim.utils import tokenize
-import h5utils
+
 #from synset_explorer import Families
 #import retrieval_utils
 
@@ -44,70 +39,10 @@ class Retriever:
         self.w2v_model = KeyedVectors.load_word2vec_format(w2v_path, binary=True, unicode_errors='ignore')
         print("Finished setting up")
 
-
-
-
-
     #sets the driver
     def set_driver(self,uri,user,pw):
         self.driver = GraphDatabase.driver(uri, auth=(user, pw))
     
-
-
-    def getQuery(self,queryStr):
-
-        #This extracts relations from the query String
-        relations = self.extractRelations(queryStr)
-        # USE the relation component approximates to generate relation approximates
-        queryApproximates = self.getApproximates(relations)
-        #print 'Finished getting relations in ' + str(time.time()-start)
-        #print '---------------------------------------------\n'
-        
-        
-        # we need to get images with the approximates in them.
-        image_collection={}
-        query_collection = {}
-        #this is for each top level query
-        for query in relations:
-            #images that match this query
-            image_collection[query]={}
-            #For each approximate for this query
-            for approximate in queryApproximates[query]:
-                #get image ID associated with this approximate (from image_ids database)
-                image_collection[query][approximate] = self.image_ids(approximate.getRelation())
-                
-                #inverted index of (Image-id,query) to approximate, i.e.
-                # for each image
-                    # store the queries. For each query
-                        # store the approximates
-                for ids in image_collection[query][approximate]:
-                    if ids not in query_collection:
-                        query_collection[ids] = {}
-                    if query not in query_collection[ids]:
-                        query_collection[ids][query]=[]
-                    query_collection[ids][query].append(approximate)
-            #print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
-
-        #Now we rank the image
-        out_counter = 0
-        images_ranked={}
-        for vgm_image_id in query_collection:
-
-            query_list = [item for item in query_collection[vgm_image_id]]
-            image_rank = 1
-            for query in query_list:
-                #item is what????? (item is RankedRelation) TODO
-                query_ranks = [item.getRank() for item in query_collection[vgm_image_id][query]]
-                #here the ranks are multiplied <-- need to modify ranker in baseModel to use cos_sim
-                #need to update this to sum? or keep multiply?? (no, sum and normalize) TODO
-                image_rank*=min(query_ranks)
-            images_ranked[vgm_image_id] = image_rank
-
-        #sorted in descending order i.e. largest to smallest --> need to modify to sort from smallest to largest
-        ranked_images = [item[0] for item in sorted(images_ranked.items(), key=operator.itemgetter(1))]
-        return ranked_images
-        #return list of URLs
-
     def getApproximates(self,relations):
         #, objectFamilies, relationFamilies, driver):
         queryApproximates={}
@@ -244,3 +179,57 @@ class Retriever:
             aggregate_image_ids[entry] = [int(item) for item in aggregate_image_ids[entry]]
         return aggregate_image_ids
 
+    #This gets the actual query
+    def getQuery(self,queryStr):
+
+        #This extracts relations from the query String
+        relations = self.extractRelations(queryStr)
+        # USE the relation component approximates to generate relation approximates
+        queryApproximates = self.getApproximates(relations)
+        #print 'Finished getting relations in ' + str(time.time()-start)
+        #print '---------------------------------------------\n'
+        
+        
+        # we need to get images with the approximates in them.
+        image_collection={}
+        query_collection = {}
+        #this is for each top level query
+        for query in relations:
+            #images that match this query
+            image_collection[query]={}
+            #For each approximate for this query
+            for approximate in queryApproximates[query]:
+                #get image ID associated with this approximate (from image_ids database)
+                image_collection[query][approximate] = self.image_ids(approximate.getRelation())
+                
+                #inverted index of (Image-id,query) to approximate, i.e.
+                # for each image
+                    # store the queries. For each query
+                        # store the approximates
+                for ids in image_collection[query][approximate]:
+                    if ids not in query_collection:
+                        query_collection[ids] = {}
+                    if query not in query_collection[ids]:
+                        query_collection[ids][query]=[]
+                    query_collection[ids][query].append(approximate)
+            #print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
+
+        #Now we rank the image
+        out_counter = 0
+        images_ranked={}
+        for vgm_image_id in query_collection:
+
+            query_list = [item for item in query_collection[vgm_image_id]]
+            image_rank = 1
+            for query in query_list:
+                #item is what????? (item is RankedRelation) TODO
+                query_ranks = [item.getRank() for item in query_collection[vgm_image_id][query]]
+                #here the ranks are multiplied <-- need to modify ranker in baseModel to use cos_sim
+                #need to update this to sum? or keep multiply?? (no, sum and normalize) TODO
+                image_rank*=min(query_ranks)
+            images_ranked[vgm_image_id] = image_rank
+
+        #sorted in descending order i.e. largest to smallest --> need to modify to sort from smallest to largest
+        ranked_images = [item[0] for item in sorted(images_ranked.items(), key=operator.itemgetter(1))]
+        return ranked_images
+        #return list of URLs
