@@ -11,6 +11,9 @@ import pdb
 from synset_explorer import SynsetExplorer
 from rankedRelation import RankedRelation
 from baseModel import BaseModel
+from gensim.models import KeyedVectors
+from gensim.utils import tokenize
+import h5utils
 #from synset_explorer import Families
 #import retrieval_utils
 
@@ -21,21 +24,25 @@ from baseModel import BaseModel
 
 class Retriever:
 
-    def __init__(self, objectdb, relationdb, aggregatedb,aggregate_path):
+    def __init__(self, objectdb, relationdb, aggregatedb,aggregate_path, w2v_path, embedding_path):
         self.driver = None
 
         #objectsdb_path   = 'databases/' + 'objects'   + '.db'
         #relationsdb_path = 'databases/' + 'relations' + '.db'
         #aggregatedb_path = 'databases/' + 'aggregate' + '.db'
-        
+        print("Setting up databases")
         self.object_ids = self.get_node_ids(objectdb)
         self.relation_ids = self.get_node_ids(relationdb)
         self.aggregate_ids = self.get_aggregate_ids(aggregatedb)
-
+        print("Setting up explorers")
         self.aggregate_image_ids = self.get_aggregate_image_ids(aggregate_path)
         self.objectFamilies = SynsetExplorer(objectdb)
         self.relationFamilies = SynsetExplorer(relationdb)
-        
+        print("Setting up wordnet embeddings")
+        self.embedding_wn = h5utils.load_dict_from_hdf5(embedding_path)
+        print("Setting up w2v embeddings")
+        self.w2v_model = KeyedVectors.load_word2vec_format(w2v_path, binary=True, unicode_errors='ignore')
+        print("Finished setting up")
 
 
 
@@ -67,7 +74,7 @@ class Retriever:
             #For each approximate for this query
             for approximate in queryApproximates[query]:
                 #get image ID associated with this approximate (from image_ids database)
-                image_collection[query][approximate] = image_ids(approximate.getRelation())
+                image_collection[query][approximate] = self.image_ids(approximate.getRelation())
                 
                 #inverted index of (Image-id,query) to approximate, i.e.
                 # for each image
@@ -92,12 +99,12 @@ class Retriever:
                 #item is what????? (item is RankedRelation) TODO
                 query_ranks = [item.getRank() for item in query_collection[vgm_image_id][query]]
                 #here the ranks are multiplied <-- need to modify ranker in baseModel to use cos_sim
-                #need to update this to sum? or keep multiply?? (no, sum and normalize)
-                image_rank*=max(query_ranks)
+                #need to update this to sum? or keep multiply?? (no, sum and normalize) TODO
+                image_rank*=min(query_ranks)
             images_ranked[vgm_image_id] = image_rank
 
         #sorted in descending order i.e. largest to smallest --> need to modify to sort from smallest to largest
-        ranked_images = [item[0] for item in sorted(images_ranked.items(), key=operator.itemgetter(1), reverse=True)]
+        ranked_images = [item[0] for item in sorted(images_ranked.items(), key=operator.itemgetter(1))]
         return ranked_images
         #return list of URLs
 
@@ -126,7 +133,7 @@ class Retriever:
             queryApproximates[relation]=[]
             #for each relation in relationList (which was gen by taking families of obj and subj, and top2/3 families of rel)
             for unrankedRelation in relationList:
-                queryApproximates[relation].append(RankedRelation(baseModel.getModel(),  unrankedRelation, baseModel.rank(unrankedRelation)))
+                queryApproximates[relation].append(RankedRelation(baseModel.getModel(),  unrankedRelation, baseModel.rank(unrankedRelation, self.embedding_wn, self.w2v_model)))
             #pdb.set_trace()
         return queryApproximates
 
