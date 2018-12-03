@@ -20,8 +20,9 @@ Start python in the virtual environment with the NLTK package installed.
 ### File Requirements
 The top level directory requires a `databases` folder with the following files generated from Step 0.
 
-- `aggregate_image_ids.vgm`
-- `image_urls.json`
+- `full_aggregate_image_ids.vgm` - This is an inverted index of aggregate triplet ids mapped to image ids and objects within the image
+- `image_urls.json` - This is a mapping of image ids to their URLs from the Visual Genome dataset
+- `wn_embeddings.vgm`
 
 ### Database Requirements
 The `databases` folder also requires the following non-text files:
@@ -30,19 +31,21 @@ The `databases` folder also requires the following non-text files:
 - `objects.db`
 - `relations.db`
 - `GoogleNews-vectors-negative300.bin`
-- `wn_embedding.h5`
 
 ### Software Requirements
 A Neo4J server must be running with the aggregate graph databases already imported <-- TODO ADD DETAILS -->
 
+### Links
+All files for the databases folder can be found [here](https://drive.google.com/open?id=1KIjqP7h7p3vIczy7-yDS0UuvL54vIqYz).
 
+You still need to download the Google news vectors, though. You can find that [here](https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM)
 
 ## Execution
-We will describe both example and UI,
+We will describe both example and UI.
 
 ### Example
 `tester.py` performs a sample run of the Image Retriever. You may replace the query in the file with queries of your own from the `queries` folder. The file can also be modified to keep running queries. The first query of a session always takes the longest as the backend must setup a cache for graph search.
 
-The setup takes ~3-4 minutes.
+The setup takes ~100s.
 
 ### UI
