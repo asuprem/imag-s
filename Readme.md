@@ -36,10 +36,12 @@ The `databases` folder also requires the following non-text files:
 A Neo4J server must be running with the aggregate graph databases already imported <-- TODO ADD DETAILS -->
 
 ### Links
-All files for the databases folder can be found [here](https://drive.google.com/open?id=1KIjqP7h7p3vIczy7-yDS0UuvL54vIqYz)
+All files for the databases folder can be found [here](https://drive.google.com/open?id=1KIjqP7h7p3vIczy7-yDS0UuvL54vIqYz).
+
+You still need to download the Google news vectors, though. You can find that [here](https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM)
 
 ## Execution
-We will describe both example and UI,
+We will describe both example and UI.
 
 ### Example
 `tester.py` performs a sample run of the Image Retriever. You may replace the query in the file with queries of your own from the `queries` folder. The file can also be modified to keep running queries. The first query of a session always takes the longest as the backend must setup a cache for graph search.
