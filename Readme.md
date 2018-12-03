@@ -43,6 +43,6 @@ We will describe both example and UI,
 ### Example
 `tester.py` performs a sample run of the Image Retriever. You may replace the query in the file with queries of your own from the `queries` folder. The file can also be modified to keep running queries. The first query of a session always takes the longest as the backend must setup a cache for graph search.
 
-The setup takes ~3-4 minutes.
+The setup takes ~100s.
 
 ### UI
