@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
 
     query = ''
-    while(1)
+    while(1):
         query_file_name = raw_input("Query file:  ")
         start = time.time()
         with open('queries/'+query_file_name+'.query', 'r') as q_file:
