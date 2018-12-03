@@ -13,7 +13,7 @@ if __name__ == "__main__":
     aggregatedb_path = 'databases/' + 'aggregate' + '.db'
     aggregate_path = 'databases/aggregate_image_ids.vgm'
     w2v_path = 'databases/GoogleNews-vectors-negative300.bin'
-    embedding_path = 'databases/wn_embedding.h5'
+    embedding_path = 'databases/wn_embeddings.vgm'
     IMAG = retriever.Retriever(objectsdb_path,relationsdb_path,aggregatedb_path,aggregate_path, w2v_path, embedding_path)
 
     uri = "bolt://localhost:7687"

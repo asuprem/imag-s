@@ -36,7 +36,8 @@ class Retriever:
         self.objectFamilies = SynsetExplorer(objectdb)
         self.relationFamilies = SynsetExplorer(relationdb)
         print("Setting up wordnet embeddings at %3.4f" % (time.time()-start))
-        self.embedding_wn = h5utils.load_dict_from_hdf5(embedding_path)
+        #self.embedding_wn = h5utils.load_dict_from_hdf5(embedding_path)
+        self.embedding_wn = self.get_synset_embeddings(embedding_path)
         print("Setting up w2v embeddings at %3.4f" % (time.time()-start))
         self.w2v_model = KeyedVectors.load_word2vec_format(w2v_path, binary=True, unicode_errors='ignore')
         print("Finished setting up at %3.4f" % (time.time()-start))
@@ -160,6 +161,13 @@ class Retriever:
         ids = self.aggregate_ids[(pred,subj,obj)] if (pred,subj,obj) in self.aggregate_ids else []
         return self.aggregate_image_ids[str(ids)] if ids else []
 
+    def get_synset_embeddings(self,path):
+        embeddings={}
+        with open(embeddings_file_path,'r') as embedding_file:
+            for line in embedding_file:
+                line = line.strip().split(',')
+                embeddings[line[0]] = np.array([float(item) for item in line[1:]]).reshape(1,-1)
+        return embeddings
     def get_node_ids(self,path):
         cursor = self.get_cursors(path)
         ids = dict(cursor.execute('Select synset,id from synset_count'))
@@ -183,6 +191,42 @@ class Retriever:
         for entry in aggregate_image_ids:
             aggregate_image_ids[entry] = [int(item) for item in aggregate_image_ids[entry]]
         return aggregate_image_ids
+
+    def get_full_aggregate_image_ids(self,path):
+        aggregate_dict={}
+        start = time.time()
+        parse_file = open(path,'r')
+        chunk_size, find_counter = 100,0
+        parse_file.read(1)
+        obj_read, stream_read, obj_counter = '','',0
+        while True:
+            now_read=parse_file.read(chunk_size)
+            parse_read = stream_read + (now_read if now_read else '')        
+            # If there is nothing left to parse
+            if not parse_read:
+                break
+            obj_counter, json_obj, stream_read  = vgm_utils.par_check(obj_counter, parse_read, obj_read)
+            obj_read = obj_read + json_obj
+
+            if obj_counter == 0:
+                #find_counter+=1
+                #if find_counter%10000 == 0:
+                #   #break
+                #    print("Processed "+str(find_counter) +  '  objects at ' + str(int(time.time()-start)))
+                self.json_extractor_aggregate(obj_read, aggregate_dict)        
+                obj_read=''
+
+            #This exists for debugging purposes -> to early stop the files for quicker verification
+            #if find_counter > 50:
+            #    break
+        parse_file.close()
+        return aggregate_dict
+    def json_extractor_aggregate(self,obj_read, aggregate_dict):
+        #format:
+        #{u'1': [[u'2372040', 2165633, 4156946, 3736577], [u'2372040', 2165633, 4156947, 3736577]]}
+        # 1 is aggregate relation ID. 2372040 is image id. 2165633 is subj in image, etc...
+        j_obj = json.loads(obj_read)
+        aggregate_dict[int(j_obj.keys()[0])] = j_obj.values()[0]
 
     #This gets the actual query
     def getQuery(self,queryStr):
@@ -242,13 +286,16 @@ class Retriever:
                 # for each image
                     # store the queries. For each query
                         # store the approximates
-                for ids in image_collection[query][approximate]:
+                #id_tuples contains the image for aggregate id, as well as list of object ids it is associated with
+                #id_tuples[0] contains the actual image id.
+                for id_tuples in image_collection[query][approximate]:
                     pdb.set_trace()
-                    if ids not in query_collection:
-                        query_collection[ids] = {}
-                    if query not in query_collection[ids]:
-                        query_collection[ids][query]=[]
-                    query_collection[ids][query].append(approximate)
+                    if id_tuples[0] not in query_collection:
+                        query_collection[id_tuples[0]] = {}
+                    if query not in query_collection[id_tuples[0]]:
+                        query_collection[id_tuples[0]][query]=[]
+                    #TODO TODO TODO
+                    query_collection[id_tuples[0]][query].append(approximate)
             #print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
 
         #Now we rank the image
