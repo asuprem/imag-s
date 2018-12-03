@@ -51,6 +51,7 @@ Temporary Items
 databases/*.db
 databases/*.bin
 databases/*.h5
+databases/*.vgm
 
 Google*.bin
 *.h5

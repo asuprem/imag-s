@@ -1,7 +1,8 @@
 from utils import retriever
 import pdb
 from utils import imageURL
-
+import warnings
+warnings.simplefilter('error', RuntimeWarning)
 
 
 if __name__ == "__main__":
