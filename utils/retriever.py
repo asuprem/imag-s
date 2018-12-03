@@ -1,7 +1,10 @@
-import sys, time, json, pdb, operator, sqlite3, h5utils
+import sys, time, json, pdb, operator, sqlite3, h5utils, vgm_utils
 from nltk.corpus import wordnet as wn
+from numpy import dot
+from numpy.linalg import norm
 import numpy as np
 from nltk.corpus.reader.wordnet import WordNetError
+from scipy import spatial
 from itertools import product
 from neo4j.v1 import GraphDatabase
 from synset_explorer import SynsetExplorer
@@ -32,7 +35,7 @@ class Retriever:
         self.relation_ids = self.get_node_ids(relationdb)
         self.aggregate_ids = self.get_aggregate_ids(aggregatedb)
         print("Setting up explorers at %3.4f" % (time.time()-start))
-        self.aggregate_image_ids = self.get_aggregate_image_ids(aggregate_path)
+        self.aggregate_image_ids = self.get_full_aggregate_image_ids(aggregate_path)
         self.objectFamilies = SynsetExplorer(objectdb)
         self.relationFamilies = SynsetExplorer(relationdb)
         print("Setting up wordnet embeddings at %3.4f" % (time.time()-start))
@@ -159,11 +162,11 @@ class Retriever:
         obj = self.object_ids[approximate[2]]
         
         ids = self.aggregate_ids[(pred,subj,obj)] if (pred,subj,obj) in self.aggregate_ids else []
-        return self.aggregate_image_ids[str(ids)] if ids else []
+        return self.aggregate_image_ids[ids] if ids else []
 
     def get_synset_embeddings(self,path):
         embeddings={}
-        with open(embeddings_file_path,'r') as embedding_file:
+        with open(path,'r') as embedding_file:
             for line in embedding_file:
                 line = line.strip().split(',')
                 embeddings[line[0]] = np.array([float(item) for item in line[1:]]).reshape(1,-1)
@@ -289,13 +292,13 @@ class Retriever:
                 #id_tuples contains the image for aggregate id, as well as list of object ids it is associated with
                 #id_tuples[0] contains the actual image id.
                 for id_tuples in image_collection[query][approximate]:
-                    pdb.set_trace()
                     if id_tuples[0] not in query_collection:
                         query_collection[id_tuples[0]] = {}
                     if query not in query_collection[id_tuples[0]]:
                         query_collection[id_tuples[0]][query]=[]
                     #TODO TODO TODO
-                    query_collection[id_tuples[0]][query].append(approximate)
+                    query_collection[id_tuples[0]][query].append(MatchedQuery(topLevelQueries[query], approximate, id_tuples[1:]))
+                    query_collection[id_tuples[0]][query][-1].setSimilarity(self.embedding_wn)
             #print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
 
         #Now we rank the image
@@ -396,3 +399,26 @@ class TopLevelQuery:
         return self.object_embedding
     def getRelationEmbedding(self):
         return self.relation_embedding
+
+class MatchedQuery:
+    def __init__(self,query,approximate,match):
+        #query: (('man', 1), ('in', 6), ('truck', 2))
+        #approximate: a RankedRelation
+        #match: [211651, 209964, 211650]
+        self.query = query
+        self.approximate = approximate
+        self.imageNodeIds = tuple(match)
+    def getQuery(self):
+        return self.query
+    def getApproximate(self):
+        return self.approximate
+    def getImageNodeIds(self):
+        return self.imageNodeIds
+    def setSimilarity(self,synset_embeddings):
+        self.subject_similarity = (1.0-self.cos_sim(synset_embeddings[self.approximate.getModel()[0]][0],self.query.getSubjectEmbedding()[0]))/2.
+        self.object_similarity = (1.-self.cos_sim(synset_embeddings[self.approximate.getModel()[2]][0],self.query.getObjectEmbedding()[0]))/2.
+        self.relation_similarity = (1.-self.cos_sim(synset_embeddings[self.approximate.getModel()[1]][0],self.query.getRelationEmbedding()[0]))/2.
+        self.similarity=[self.subject_similarity,self.object_similarity,self.relation_similarity]
+        pdb.set_trace()
+    def cos_sim(self,a,b):
+        return dot(a, b)/(norm(a)*norm(b))

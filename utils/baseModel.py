@@ -2,7 +2,8 @@
 
 from nltk.corpus import wordnet as wn
 from nltk.corpus.reader.wordnet import WordNetError
-from scipy import spatial
+from numpy import dot
+from numpy.linalg import norm
 import numpy as np
 import pdb
 class BaseModel:
@@ -28,7 +29,7 @@ class BaseModel:
                 src=embedder[str(subject)[8:-2]] if str(subject)[8:-2] in embedder else zero_v
                 tgt=w2vModel[self.natural_model[0]] if self.natural_model[0] in w2vModel else zero_v
                 try:
-                    subjSimilarity = spatial.distance.cosine(src,tgt)
+                    subjSimilarity = (1.0-self.cos_sim(src,tgt))/2.
                 except RuntimeWarning:
                     pass
             else:
@@ -39,7 +40,7 @@ class BaseModel:
                 src=embedder[str(_object)[8:-2]] if str(_object)[8:-2] in embedder else zero_v
                 tgt=w2vModel[self.natural_model[2]] if self.natural_model[2] in w2vModel else zero_v
                 try:
-                    objSimilarity = spatial.distance.cosine(src,tgt)
+                    objSimilarity = (1.0-self.cos_sim(src,tgt))/2.
                 except RuntimeWarning:
                     pass
             else:
@@ -50,13 +51,20 @@ class BaseModel:
                 src=embedder[str(predicate)[8:-2]] if str(predicate)[8:-2] in embedder else zero_v
                 tgt=w2vModel[self.natural_model[1]] if self.natural_model[1] in w2vModel else zero_v
                 try:
-                    predSimilarity = spatial.distance.cosine(src,tgt)
+                    predSimilarity = (1.0-self.cos_sim(src,tgt))/2.
                 except RuntimeWarning:
                     pass
             else:
                 predSimilarity = self.predicate.lch_similarity(predicate)
         if not predSimilarity:
             predSimilarity=1.0
-        return (subjSimilarity+predSimilarity+objSimilarity)/3.0
+        self.subjSim = subjSimilarity
+        self.objSim = objSimilarity
+        self.predSim = predSimilarity
+        self.netSim = (subjSimilarity+predSimilarity+objSimilarity)/3.0
+        return (self.subjSim,self.objSim,self.predSim,self.netSim)
     def getModel(self):
         return self.model
+
+    def cos_sim(self,a,b):
+        return dot(a, b)/(norm(a)*norm(b))
