@@ -52,7 +52,7 @@ class WordFamily:
 class SynsetExplorer:
     
     def __init__(self,database_file):
-        self.conn = sqlite3.connect(database_file)
+        self.conn = sqlite3.connect(database_file, check_same_thread=False)
         self.cursor = self.conn.cursor()
         self.hypo = lambda s: s.hyponyms()
         self.hyper = lambda s: s.hypernyms()

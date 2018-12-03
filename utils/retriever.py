@@ -186,7 +186,7 @@ class Retriever:
         return aggregate_ids
 
     def get_cursors(self,path):
-        conn_obj = sqlite3.connect(path)
+        conn_obj = sqlite3.connect(path, check_same_thread=False)
         return conn_obj.cursor()
 
     def get_aggregate_image_ids(self,path):

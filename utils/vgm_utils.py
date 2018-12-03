@@ -5,7 +5,7 @@ _PUSH = '{'
 _POP = '}'
 
 def get_cursors(path):
-    conn_obj = sqlite3.connect(path)
+    conn_obj = sqlite3.connect(path, check_same_thread=False)
     return conn_obj.cursor()
 
 def get_node_ids(path):

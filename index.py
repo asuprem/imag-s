@@ -63,7 +63,7 @@ def get_urls():
         image_ids = IMAGS.getQuery(query)
         image_urls = URL.getURLs(image_ids)
         print image_urls[:20]
-        print 'completed query in %3.4f' % (time.time()-start)
+        #print 'completed query in %3.4f' % (time.time()-start)
         #pdb.set_trace()
 
 
@@ -184,4 +184,4 @@ def jsontoquery():
 
 
 if __name__ == '__main__':
-    app.run(port=8080)
+    app.run(port=8080, debug=False)
