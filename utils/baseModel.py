@@ -14,6 +14,9 @@ class BaseModel:
         self.subject = wn.synset(self.model[0])
         self.predicate = wn.synset(self.model[1])
         self.object = wn.synset(self.model[2])
+        self.subjSim = 1.0
+        self.objSim = 1.0
+        self.predSim = 1.0
     def synCompare(self,syn1,syn2):
         return syn1[-4:-3] == syn2[-4:-3]
     def rank(self,relation, embedder = None,w2vModel = None):
@@ -30,6 +33,7 @@ class BaseModel:
                 tgt=w2vModel[self.natural_model[0]] if self.natural_model[0] in w2vModel else zero_v
                 try:
                     subjSimilarity = (1.0-self.cos_sim(src,tgt))/2.
+                    subjSimilarity = subjSimilarity[0]
                 except RuntimeWarning:
                     pass
             else:
@@ -41,6 +45,7 @@ class BaseModel:
                 tgt=w2vModel[self.natural_model[2]] if self.natural_model[2] in w2vModel else zero_v
                 try:
                     objSimilarity = (1.0-self.cos_sim(src,tgt))/2.
+                    objSimilarity=objSimilarity[0]
                 except RuntimeWarning:
                     pass
             else:
@@ -52,15 +57,16 @@ class BaseModel:
                 tgt=w2vModel[self.natural_model[1]] if self.natural_model[1] in w2vModel else zero_v
                 try:
                     predSimilarity = (1.0-self.cos_sim(src,tgt))/2.
+                    predSimilarity=predSimilarity[0]
                 except RuntimeWarning:
                     pass
             else:
                 predSimilarity = self.predicate.lch_similarity(predicate)
         if not predSimilarity:
             predSimilarity=1.0
-        self.subjSim = subjSimilarity[0]
-        self.objSim = objSimilarity[0]
-        self.predSim = predSimilarity[0]
+        self.subjSim = subjSimilarity
+        self.objSim = objSimilarity
+        self.predSim = predSimilarity
         self.netSim = (self.subjSim+self.predSim+self.objSim)/3.0
         return (self.subjSim,self.objSim,self.predSim,self.netSim)
     def getModel(self):

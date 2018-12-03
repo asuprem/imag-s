@@ -1,7 +1,6 @@
 import sys, time, json, pdb, operator, sqlite3, h5utils, vgm_utils
 from nltk.corpus import wordnet as wn
-from numpy import dot
-from numpy.linalg import norm
+
 import numpy as np
 from nltk.corpus.reader.wordnet import WordNetError
 from scipy import spatial
@@ -12,6 +11,8 @@ from rankedRelation import RankedRelation
 from baseModel import BaseModel
 from gensim.models import KeyedVectors
 from gensim.utils import tokenize
+from topLevelQuery import TopLevelQuery
+from matchedQuery import MatchedQuery
 
 #from synset_explorer import Families
 #import retrieval_utils
@@ -298,7 +299,7 @@ class Retriever:
                         query_collection[id_tuples[0]][query]=[]
                     #TODO TODO TODO
                     query_collection[id_tuples[0]][query].append(MatchedQuery(topLevelQueries[query], approximate, id_tuples[1:]))
-                    query_collection[id_tuples[0]][query][-1].setSimilarity(self.embedding_wn)
+                    #query_collection[id_tuples[0]][query][-1]
             #print 'Finished getting ' + str(query) + ' in '+ str(time.time()-start)
 
         #Now we rank the image
@@ -375,68 +376,13 @@ class Retriever:
             inverted_tlqs[top_level_queries[entry]].append(entry)
         inverted_tlns = {item:set(inverted_tlns[item]) for item in inverted_tlns}
         return inverted_tlqs,inverted_tlns
-class TopLevelQuery:
-    def __init__(self,query):
-        #query: (('man', 1), ('in', 6), ('truck', 2))
-        self.query = query
-        self.baseQuery = tuple([item[0] for item in self.query])
-        self.baseNodeIds = tuple([item[1] for item in self.query])
-        self.subject_embedding = (2*np.random.rand(300)-1).reshape(1,-1)
-        self.object_embedding = (2*np.random.rand(300)-1).reshape(1,-1)
-        self.relation_embedding = (2*np.random.rand(300)-1).reshape(1,-1)
-    def setEmbeddings(self,embeddings=None):
-        if self.baseQuery[0] in embeddings:
-            self.subject_embedding = embeddings[self.baseQuery[0]].reshape(1,-1)
-        else:
-            self.subject_embedding = np.ones(300).reshape(1,-1)
-        if self.baseQuery[1] in embeddings:
-            self.relation_embedding = embeddings[self.baseQuery[1]].reshape(1,-1)
-        else:
-            self.relation_embedding = np.ones(300).reshape(1,-1)
-        if self.baseQuery[2] in embeddings:
-            self.object_embedding = embeddings[self.baseQuery[2]].reshape(1,-1)
-        else:
-            self.object_embedding = np.ones(300).reshape(1,-1)
-
-        #self.subject_embedding = (2*np.random.rand(300)-1).reshape(1,-1)
-        #self.object_embedding = (2*np.random.rand(300)-1).reshape(1,-1)
-        #self.relation_embedding = (2*np.random.rand(300)-1).reshape(1,-1)
-    def getSubjectEmbedding(self):
-        return self.subject_embedding
-    def getObjectEmbedding(self):
-        return self.object_embedding
-    def getRelationEmbedding(self):
-        return self.relation_embedding
-
-class MatchedQuery:
-    def __init__(self,query,approximate,match):
-        #query: (('man', 1), ('in', 6), ('truck', 2))
-        #approximate: a RankedRelation
-        #match: [211651, 209964, 211650]
-        self.query = query
-        self.approximate = approximate
-        self.imageNodeIds = tuple(match)
-    def getQuery(self):
-        return self.query
-    def getApproximate(self):
-        return self.approximate
-    def getImageNodeIds(self):
-        return self.imageNodeIds
-    def setSimilarity(self,synset_embeddings):
-        #self.subject_similarity = (1.0-self.cos_sim(synset_embeddings[self.approximate.getModel()[0]][0],self.query.getSubjectEmbedding()[0]))/2.
-        #self.object_similarity = (1.-self.cos_sim(synset_embeddings[self.approximate.getModel()[2]][0],self.query.getObjectEmbedding()[0]))/2.
-        #self.relation_similarity = (1.-self.cos_sim(synset_embeddings[self.approximate.getModel()[1]][0],self.query.getRelationEmbedding()[0]))/2.
-        self.similarity=[self.approximate.subjSim,self.approximate.objSim,self.approximate.predSim]
-    def cos_sim(self,a,b):
-        return dot(a, b)/(norm(a)*norm(b))
-
     def get_image_score(self,query_collection,
-                        vgm_image_id, 
-                        inverted_tlqs,
-                        inverted_tlns,
-                        query_ids,
-                        query_ids_inverted,
-                        node_ids_cooccurence):
+                    vgm_image_id, 
+                    inverted_tlqs,
+                    inverted_tlns,
+                    query_ids,
+                    query_ids_inverted,
+                    node_ids_cooccurence):
         #pdb.set_trace()
         query_vector = np.ones((len(inverted_tlqs)))
         for top_level_query_idx in inverted_tlqs:
@@ -534,3 +480,5 @@ class MatchedQuery:
             query_vector[top_level_query_idx]=sum(node_scores.values())/len(node_scores)
         #pdb.set_trace()
         return np.linalg.norm(query_vector)
+
+

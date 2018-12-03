@@ -20,8 +20,9 @@ Start python in the virtual environment with the NLTK package installed.
 ### File Requirements
 The top level directory requires a `databases` folder with the following files generated from Step 0.
 
-- `aggregate_image_ids.vgm`
-- `image_urls.json`
+- `full_aggregate_image_ids.vgm` - This is an inverted index of aggregate triplet ids mapped to image ids and objects within the image
+- `image_urls.json` - This is a mapping of image ids to their URLs from the Visual Genome dataset
+- `wn_embeddings.vgm`
 
 ### Database Requirements
 The `databases` folder also requires the following non-text files:
@@ -30,7 +31,6 @@ The `databases` folder also requires the following non-text files:
 - `objects.db`
 - `relations.db`
 - `GoogleNews-vectors-negative300.bin`
-- `wn_embedding.h5`
 
 ### Software Requirements
 A Neo4J server must be running with the aggregate graph databases already imported <-- TODO ADD DETAILS -->
