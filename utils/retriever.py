@@ -306,7 +306,7 @@ class Retriever:
         images_ranked={}
         for vgm_image_id in query_collection:
             images_ranked[vgm_image_id] = self.get_image_score(query_collection, 
-                                                                vgm_image_id),
+                                                                vgm_image_id,
                                                                 inverted_tlqs,
                                                                 inverted_tlns,
                                                                 query_ids,
