@@ -54,6 +54,6 @@ Execute `tester.py` using:
 
 When it prompts, provide a query file name from the queries folder. You just need the base name, without the extension:
 
-    $ 
+    $ Query file:  query8
 
 ### UI
