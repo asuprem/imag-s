@@ -30,5 +30,6 @@ if __name__ == "__main__":
         #pdb.set_trace()
         image_ids = IMAG.getQuery(query)
         image_urls = URL.getURLs(image_ids)
+        print image_urls[:20]
         print 'completed query in %3.4f' % (time.time()-start)
         pdb.set_trace()

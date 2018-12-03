@@ -48,4 +48,12 @@ We will describe both example and UI.
 
 The setup takes ~100s.
 
+Execute `tester.py` using:
+
+    $ python tester.py
+
+When it prompts, provide a query file name from the queries folder. You just need the base name, without the extension:
+
+    $ 
+
 ### UI
