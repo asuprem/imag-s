@@ -35,7 +35,10 @@ def get_urls():
     		json.dump(content, outfile)
     	query = jsontoquery()
     	print(query)
-    	return json.dumps({'success':True}), query, {'ContentType':'application/json'}
+    	# qjson = json.loads("place for pictures")
+    	# print(qjson)
+    	# return json.dumps({'success':True}), qjson, {'ContentType':'application/json'}
+    	return json.dumps({'status':'OK', 'pass':'Place for Pics'});
 		# return Response(dumps("YES"),
 		#                 mimetype="application/json")
 
@@ -80,7 +83,8 @@ def jsontoquery():
 		        countTR=countTR+1
 		if(countTR!=countSR or countTR!=1 or countSR!=1):
 		    print("This query is not valid")
-		    sys.exit()
+		    return []
+		    # sys.exit()
 		else:
 		    print("Relation "+relation[key]+" is valid!")
 
@@ -90,10 +94,12 @@ def jsontoquery():
 	for i in range(len(data["edges"])):
 	    if data["edges"][i]["source"] in noun.keys() and data["edges"][i]["target"] in noun.keys():
 	        print("This query is not valid")
-	        sys.exit()
+	        return []
+	        # sys.exit()
 	    if data["edges"][i]["source"] in relation.keys() and data["edges"][i]["target"] in relation.keys():
 	        print("This query is not valid!")
-	        sys.exit()
+	        return []
+	        # sys.exit()
 
 	flagnoun=0
 	keystopop=[]
