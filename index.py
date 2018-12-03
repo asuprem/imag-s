@@ -1,9 +1,31 @@
 #!/usr/bin/env python
-import os
-import json
+#basic imports
+import os, json, sys
 from json import dumps
+#flask import
 from flask import Flask, g, Response, request, render_template
-import sys
+
+#retriever imports + warning imports
+from utils import retriever
+import pdb, time, warnings
+from utils import imageURL
+warnings.simplefilter('error', RuntimeWarning)
+
+
+#path loading
+objectsdb_path   = 'databases/' + 'objects'   + '.db'
+relationsdb_path = 'databases/' + 'relations' + '.db'
+aggregatedb_path = 'databases/' + 'aggregate' + '.db'
+aggregate_path = 'databases/full_aggregate_image_ids.vgm'
+w2v_path = 'databases/GoogleNews-vectors-negative300.bin'
+embedding_path = 'databases/wn_embeddings.vgm'
+uri = "bolt://localhost:7687"
+
+#setting up the retriever
+IMAGS = retriever.Retriever(objectsdb_path,relationsdb_path,aggregatedb_path,aggregate_path, w2v_path, embedding_path)
+IMAGS.set_driver(uri,'neo4j','scientia')
+URL = imageURL.ImageURL('databases/image_urls.json')
+
 
 # pics = os.path.join('static', 'pics')
 
@@ -34,11 +56,23 @@ def get_urls():
     	with open('data.json', 'w') as outfile:
     		json.dump(content, outfile)
     	query = jsontoquery()
-    	print(query)
+    	#print(query)
+
+		#get query and push
+        #pdb.set_trace()
+        image_ids = IMAGS.getQuery(query)
+        image_urls = URL.getURLs(image_ids)
+        print image_urls[:20]
+        print 'completed query in %3.4f' % (time.time()-start)
+        #pdb.set_trace()
+
+
+
+
     	# qjson = json.loads("place for pictures")
     	# print(qjson)
     	# return json.dumps({'success':True}), qjson, {'ContentType':'application/json'}
-    	return json.dumps({'status':'OK', 'pass':'Place for Pics'});
+    	return json.dumps({'status':'OK', 'pass':image_urls[:15]});
 		# return Response(dumps("YES"),
 		#                 mimetype="application/json")
 
