@@ -305,7 +305,14 @@ class Retriever:
         out_counter = 0
         images_ranked={}
         for vgm_image_id in query_collection:
-
+            images_ranked[vgm_image_id] = self.get_image_score(query_collection, 
+                                                                vgm_image_id),
+                                                                inverted_tlqs,
+                                                                inverted_tlns,
+                                                                query_ids,
+                                                                query_ids_inverted,
+                                                                node_ids_cooccurence)
+            '''
             query_list = [item for item in query_collection[vgm_image_id]]
             image_rank = 1
             for query in query_list:
@@ -315,11 +322,12 @@ class Retriever:
                 #need to update this to sum? or keep multiply?? (no, sum and normalize) TODO
                 image_rank*=min(query_ranks)
             images_ranked[vgm_image_id] = image_rank
+            '''
 
         #sorted in descending order i.e. largest to smallest --> need to modify to sort from smallest to largest
         ranked_images = [item[0] for item in sorted(images_ranked.items(), key=operator.itemgetter(1))]
         return ranked_images
-        #return list of URLs
+        #return list of image IDS
     #This sets up coocurence matrix so same nodes are identified as such
     def top_level_setup(self,relations):
         query_ids = {}
@@ -415,10 +423,114 @@ class MatchedQuery:
     def getImageNodeIds(self):
         return self.imageNodeIds
     def setSimilarity(self,synset_embeddings):
-        self.subject_similarity = (1.0-self.cos_sim(synset_embeddings[self.approximate.getModel()[0]][0],self.query.getSubjectEmbedding()[0]))/2.
-        self.object_similarity = (1.-self.cos_sim(synset_embeddings[self.approximate.getModel()[2]][0],self.query.getObjectEmbedding()[0]))/2.
-        self.relation_similarity = (1.-self.cos_sim(synset_embeddings[self.approximate.getModel()[1]][0],self.query.getRelationEmbedding()[0]))/2.
-        self.similarity=[self.subject_similarity,self.object_similarity,self.relation_similarity]
-        pdb.set_trace()
+        #self.subject_similarity = (1.0-self.cos_sim(synset_embeddings[self.approximate.getModel()[0]][0],self.query.getSubjectEmbedding()[0]))/2.
+        #self.object_similarity = (1.-self.cos_sim(synset_embeddings[self.approximate.getModel()[2]][0],self.query.getObjectEmbedding()[0]))/2.
+        #self.relation_similarity = (1.-self.cos_sim(synset_embeddings[self.approximate.getModel()[1]][0],self.query.getRelationEmbedding()[0]))/2.
+        self.similarity=[self.approximate.subjSim,self.approximate.objSim,self.approximate.predSim]
     def cos_sim(self,a,b):
         return dot(a, b)/(norm(a)*norm(b))
+
+    def get_image_score(self,query_collection,
+                        vgm_image_id, 
+                        inverted_tlqs,
+                        inverted_tlns,
+                        query_ids,
+                        query_ids_inverted,
+                        node_ids_cooccurence):
+        #pdb.set_trace()
+        query_vector = np.ones((len(inverted_tlqs)))
+        for top_level_query_idx in inverted_tlqs:
+        #top_level_query_idx = 0
+        #Extract the relevant approximates from query_collection
+            image_inverted_node_index={}
+            image_inverted_node_cooccurence_set={}
+            image_inverted_node_ids={}
+            top_level_approximates=[]
+            for query_id in inverted_tlqs[top_level_query_idx]:
+                if query_ids[query_id] in query_collection[vgm_image_id]:
+                    #print(query_collection[image_id])
+                    top_level_approximates+=query_collection[vgm_image_id][query_ids[query_id]]
+            #pdb.set_trace()
+            for approximate in top_level_approximates:
+                for node_ in [0,1,2]:
+                    if approximate.getImageNodeIds()[node_] not in image_inverted_node_index:
+                        image_inverted_node_index[approximate.getImageNodeIds()[node_]]=[]
+                        image_inverted_node_cooccurence_set[approximate.getImageNodeIds()[node_]]=set()
+                        image_inverted_node_ids[approximate.getImageNodeIds()[node_]] = approximate.getQuery().baseNodeIds[node_]
+                    image_inverted_node_index[approximate.getImageNodeIds()[node_]].append((
+                            query_ids_inverted[approximate.getQuery().query],
+                            node_,approximate))
+                    image_inverted_node_cooccurence_set[approximate.getImageNodeIds()[node_]]|=set([(
+                            query_ids_inverted[approximate.getQuery().query],
+                            node_)])
+                    #print(approximate.getQuery().query, approximate.getApproximate().getRelation())
+            #pdb.set_trace()
+            node_subgraphs = {}
+            node_subgraphs_query_types={}
+            node_subgraph_inverted = {}
+            current_subgraph = 0
+            node_finished={}
+            for approximate in top_level_approximates:
+                if approximate not in node_subgraph_inverted:
+                    node_subgraphs[current_subgraph] = [approximate]
+                    node_subgraphs_query_types[current_subgraph] = set([query_ids_inverted[approximate.getQuery().query]])
+                    node_subgraph_inverted[approximate] = current_subgraph
+                #consider the subject and object nodes for each approximate
+                for node_ in [0,2]:
+                    #print (image_inverted_node_ids[approximate.getImageNodeIds()[node_]],
+                    #       node_ids_cooccurence[image_inverted_node_ids[approximate.getImageNodeIds()[node_]]] )
+                    # For each coocurence info for the image nodes, check if it is supposed to be a cooccurence
+                    # If it is, we add the appropriate approximate to the correct subgraph
+                    if approximate.getImageNodeIds()[node_] not in node_finished:
+                        node_finished[approximate.getImageNodeIds()[node_]]=1
+                        
+                        for cooccurence in image_inverted_node_index[approximate.getImageNodeIds()[node_]]:
+                            if  (cooccurence[0:2]) in node_ids_cooccurence[image_inverted_node_ids[approximate.getImageNodeIds()[node_]]]:
+                                #Here, we compare the subgraph nubers, Whichever is smaller gets added to
+                                #print(approximate.getImageNodeIds()[node_],cooccurence[2],approximate,approximate in node_subgraph_inverted, cooccurence[2] in node_subgraph_inverted,current_subgraph,approximate.getApproximate().getRelation())
+                                if cooccurence[2] in node_subgraph_inverted and node_subgraph_inverted[cooccurence[2]] < current_subgraph:
+                                    #Update the subgraph numbers is the current subgraph has a smaller id (i.e. joining)
+                                    if current_subgraph in node_subgraphs:
+                                        node_subgraphs[node_subgraph_inverted[cooccurence[2]]]+=node_subgraphs[current_subgraph]
+                                        node_subgraphs_query_types[node_subgraph_inverted[cooccurence[2]]]|=node_subgraphs_query_types[current_subgraph]
+                                        for old_approximates in node_subgraphs[current_subgraph]:
+                                            node_subgraph_inverted[old_approximates] = node_subgraph_inverted[cooccurence[2]]
+                                if cooccurence[2] not in node_subgraph_inverted:
+                                    node_subgraphs[current_subgraph]=[cooccurence[2]]
+                                    node_subgraphs_query_types[current_subgraph] = set([query_ids_inverted[cooccurence[2].getQuery().query]])
+                                    node_subgraph_inverted[cooccurence[2]] = current_subgraph
+                                #node_subgraphs[current_subgraph]
+                            #print((cooccurence[0:2]) in node_ids_cooccurence[image_inverted_node_ids[approximate.getImageNodeIds()[node_]]],cooccurence[2])
+                        #print('')
+                current_subgraph+=1
+            #pdb.set_trace()
+            node_scores = {item:1.0 for item in inverted_tlns[top_level_query_idx]}
+            if node_subgraphs_query_types:
+                sorted_subgraph_lengths = sorted(node_subgraphs_query_types.items(),key=lambda item:len(item[1]),reverse=True)
+                
+                queries_covered={}
+                temp_queries_covered=set()
+                query_len = sorted_subgraph_lengths[0][0]
+                for subgraph in sorted_subgraph_lengths:
+                    if len(node_subgraphs[subgraph[0]]) < query_len:
+                        query_len=len(node_subgraphs[subgraph[0]])
+                        for i in temp_queries_covered:
+                            queries_covered[i]=1
+                        temp_queries_covered=set()
+                    nodes_covered = {}
+                    for queries_ in node_subgraphs[subgraph[0]]:
+                        #We don't want to be dealing with queries that are covered by larger subgraphs.
+                        if query_ids_inverted[queries_.getQuery().query] not in queries_covered:
+                            temp_queries_covered|=set([query_ids_inverted[queries_.getQuery().query]])
+                            for idx,image_node_id in enumerate(queries_.getImageNodeIds()):
+                                if image_node_id not in nodes_covered:
+                                    #print(queries_.similarity[idx])
+                                    this_node_score = queries_.similarity[idx]/float(min(len(image_inverted_node_cooccurence_set[image_node_id]) ,  len(node_ids_cooccurence[image_inverted_node_ids[image_node_id]]) if image_inverted_node_ids[image_node_id] in node_ids_cooccurence else 1))
+                                    if this_node_score < node_scores[image_inverted_node_ids[image_node_id]]:
+                                        node_scores[image_inverted_node_ids[image_node_id]] = this_node_score
+                    
+                #top_level_query_score = sum(list(node_scores.values()))/len(node_scores)
+                #pdb.set_trace()
+            query_vector[top_level_query_idx]=sum(node_scores.values())/len(node_scores)
+        #pdb.set_trace()
+        return np.linalg.norm(query_vector)

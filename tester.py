@@ -1,7 +1,6 @@
 from utils import retriever
-import pdb
+import pdb, time, warnings
 from utils import imageURL
-import warnings
 warnings.simplefilter('error', RuntimeWarning)
 
 
@@ -22,11 +21,14 @@ if __name__ == "__main__":
 
 
     query = ''
-    with open('queries/query2.query', 'r') as q_file:
-        q_file.readline()
-        query = q_file.read()
-    #pdb.set_trace()
-    image_ids = IMAG.getQuery(query)
-    image_urls = URL.getURLs(image_ids)
-
-    pdb.set_trace()
+    while(1)
+        query_file_name = raw_input("Query file:  ")
+        start = time.time()
+        with open('queries/'+query_file_name+'.query', 'r') as q_file:
+            q_file.readline()
+            query = q_file.read()
+        #pdb.set_trace()
+        image_ids = IMAG.getQuery(query)
+        image_urls = URL.getURLs(image_ids)
+        print 'completed query in %3.4f' % (time.time()-start)
+        pdb.set_trace()

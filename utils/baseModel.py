@@ -58,13 +58,12 @@ class BaseModel:
                 predSimilarity = self.predicate.lch_similarity(predicate)
         if not predSimilarity:
             predSimilarity=1.0
-        self.subjSim = subjSimilarity
-        self.objSim = objSimilarity
-        self.predSim = predSimilarity
-        self.netSim = (subjSimilarity+predSimilarity+objSimilarity)/3.0
+        self.subjSim = subjSimilarity[0]
+        self.objSim = objSimilarity[0]
+        self.predSim = predSimilarity[0]
+        self.netSim = (self.subjSim+self.predSim+self.objSim)/3.0
         return (self.subjSim,self.objSim,self.predSim,self.netSim)
     def getModel(self):
         return self.model
-
     def cos_sim(self,a,b):
         return dot(a, b)/(norm(a)*norm(b))
