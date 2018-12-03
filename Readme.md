@@ -35,7 +35,8 @@ The `databases` folder also requires the following non-text files:
 ### Software Requirements
 A Neo4J server must be running with the aggregate graph databases already imported <-- TODO ADD DETAILS -->
 
-
+### Links
+All files for the databases folder can be found [here](https://drive.google.com/open?id=1KIjqP7h7p3vIczy7-yDS0UuvL54vIqYz)
 
 ## Execution
 We will describe both example and UI,
