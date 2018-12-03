@@ -43,6 +43,7 @@ p{
      text-align: center; 
      overflow: overlay;
      position: relative;
+     fill: white;
 }
 
 h2{
@@ -89,6 +90,10 @@ body{
 
 #download-input{
     margin: 0 0.5em;
+}
+
+#result{
+  fill: white;
 }
 
 .conceptG text{
@@ -149,6 +154,7 @@ path.link.selected {
     <div id = "pics">
       <h2>Results</h2>
       <!-- <img src={{user_image}} height = "1000" width= "530"> -->
+      <p id=result align="center"></p>
       </div> 
     <div id="graph">
 
@@ -292,9 +298,11 @@ path.link.selected {
         data: JSON.stringify({"nodes": thisGraph.nodes, "edges": saveEdges}),
         dataType: 'json',
         contentType: 'application/json; charset=utf-8',
-        success: function(data){
+        success: function(response){
           // print("here")
-          console.log(data)
+          // alert(response['pass'])
+          console.log(response)
+          $("#result").text(response['pass']);
         }
       })
       // saveAs(blob, "mydag.json");
