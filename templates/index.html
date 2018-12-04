@@ -1,169 +1,8 @@
 <!DOCTYPE HTML>
 <html>
-<style>
-body{
-    margin: 0;
-    padding: 0;
-    overflow:hidden;
-}
-/*
-.svgMain{
-  background-color:"#DCDCDC";
-}*/
-* {
-  box-sizing: border-box;
-}
 
-.images{
-    width:800px;
-    height:auto;
-    padding:20px;
-    float:left;
-    
-}
-#pics{
-  background-color: rgb(235, 235, 235);
-  height: 900px;
-  width: 930px;
-  float: right;
- overflow-y:scroll; 
-}
-.row {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-#makegraph {
-    flex: 30%; /* Set the width of the sidebar */
-    /*background-color: #f1f1f1; */
-    background-color: rgb(248, 248, 248);
-    /*background-color: #808080;*/
-    padding: 20px; /* Some padding */
-    color: white;
-}
-
-#showresults { 
-    flex: 70%; /* Set the width of the main content */
-    background-color: blue; /* White background color */
-    padding: 20px; /* Some padding */
-}
-
-
-
-
-h2{
-  color:darkslategray;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  text-align: center;
-}
-
-p{ 
-     text-align: center; 
-     overflow: overlay;
-     position: relative;
-     fill: white;
-}
-
-
-body{
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    background-color: rgb(248, 248, 248)
-}
-
-
-
-#toolbox{
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    margin-bottom: 0.5em;
-    margin-left: 1em;
-    border: 2px solid #EEEEEE;
-    border-radius: 5px;
-    padding: 1em;
-    z-index: 5;
-}
-
-#toolbox input{
-    width: 30px;
-    opacity: 0.4;
-}
-#toolbox input:hover{
-    opacity: 1;
-    cursor: pointer;
-}
-
-#hidden-file-upload{
-    display: none;
-}
-
-#download-input{
-    margin: 0 0.5em;
-}
-
-#result{
-  fill: white;
-}
-
-.conceptG text{
-    pointer-events: none;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 1.2em;
-    fill:darkslategray;
-}
-
-marker{
-    fill: #333;
-}
-
-g.conceptG circle{
-    /*fill: #F6FBFF;*/
-    stroke: #333;
-    stroke-width: 2px;
-}
-
-g.conceptG:hover circle{
-    fill: rgb(200, 238, 241);
-}
-
-g.selected circle{
-    fill: rgb(250, 232, 255);
-}
-g.selected:hover circle{
-    fill: rgb(250, 232, 255);
-}
-
-path.link {
-    fill: none;
-    stroke: #333;
-    stroke-width: 6px;
-    cursor: default;
-}
-
-path.link:hover{
-    stroke: rgb(94, 196, 204);
-}
-
-g.connect-node circle{
-    fill: #BEFFFF;
-}
-
-path.link.hidden{
-    stroke-width: 0;
-}
-
-path.link.selected {
-    stroke: rgb(229, 172, 247);
-}
-
-</style>
   <head>
-    
+    <link rel="stylesheet" type="text/css" href="/static/index.css" />
   </head>
  
   <body>
@@ -172,23 +11,23 @@ path.link.selected {
       <h2>Results</h2>
       <!-- <img src={{user_image}} height = "1000" width= "530"> -->
       <p id=result align="center"></p>
-      <img src = '' alt ='' id = "img1" class = "images" >
-      <img src = '' alt ='' id = "img2" class = "images" >
-      <img src = '' alt ='' id = "img3" class = "images" >
-      <img src = '' alt ='' id = "img4" class = "images" >
-      <img src = '' alt ='' id = "img5" class = "images" >
+      <img src = '' alt ='' id = "img1" width = 120 height = 120>
+      <img src = '' alt ='' id = "img2" width = 120 height = 120>
+      <img src = '' alt ='' id = "img3" width = 120 height = 120>
+      <img src = '' alt ='' id = "img4" width = 120 height = 120>
+      <img src = '' alt ='' id = "img5" width = 120 height = 120>
 
-      <img src = '' alt ='' id = "img6" class = "images" >
-      <img src = '' alt ='' id = "img7" class = "images" >
-      <img src = '' alt ='' id = "img8" class = "images" >
-      <img src = '' alt ='' id = "img9" class = "images" >
-      <img src = '' alt ='' id = "img10" class = "images" >
+      <img src = '' alt ='' id = "img6" width = 120 height = 120>
+      <img src = '' alt ='' id = "img7" width = 120 height = 120>
+      <img src = '' alt ='' id = "img8" width = 120 height = 120>
+      <img src = '' alt ='' id = "img9" width = 120 height = 120>
+      <img src = '' alt ='' id = "img10" width = 120 height = 120>
 
-      <img src = '' alt ='' id = "img11" class = "images" >
-      <img src = '' alt ='' id = "img12" class = "images" >
-      <img src = '' alt ='' id = "img13" class = "images" >
-      <img src = '' alt ='' id = "img14" class = "images" >
-      <img src = '' alt ='' id = "img15" class = "images" >
+      <img src = '' alt ='' id = "img11" width = 120 height = 120>
+      <img src = '' alt ='' id = "img12" width = 120 height = 120>
+      <img src = '' alt ='' id = "img13" width = 120 height = 120>
+      <img src = '' alt ='' id = "img14" width = 120 height = 120>
+      <img src = '' alt ='' id = "img15" width = 120 height = 120>
       </div> 
     <div id="graph">
 
@@ -801,10 +640,10 @@ path.link.selected {
       .attr("r", String(consts.nodeRadius))
       .attr("fill",function(e){
         if (e.class == "noun"){
-          return "#abb9b7";
+          return "#748b88";
         }
         else{
-          return "#d2acb1";
+          return "#a65963";
         };
       });
 
@@ -830,7 +669,7 @@ path.link.selected {
     // width = 500;
     // height = 1000;
     x = 750;
-    y = 900;
+    y = 1000;
     svg.attr("width", x).attr("height", y);
   };
 
@@ -850,7 +689,7 @@ path.link.selected {
       height =  window.innerHeight|| docEl.clientHeight|| bodyEl.clientHeight;
 
   width = 750;
-  height = 800;
+  height = 1000;
 
   var xLoc = width/2 - 25,
       yLoc = 100;
@@ -867,8 +706,7 @@ path.link.selected {
   /** MAIN SVG **/
   var svg = d3.select("body").append("svg")
         .attr("width", width)
-        .attr("height", height)
-        .attr("class","svgMain");
+        .attr("height", height);
   var graph = new GraphCreator(svg, nodes, edges);
       graph.setIdCt(2);
   graph.updateGraph();

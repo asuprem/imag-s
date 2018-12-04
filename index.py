@@ -22,6 +22,7 @@ embedding_path = 'databases/wn_embeddings.vgm'
 uri = "bolt://localhost:7687"
 
 #setting up the retriever
+
 IMAGS = retriever.Retriever(objectsdb_path,relationsdb_path,aggregatedb_path,aggregate_path, w2v_path, embedding_path)
 IMAGS.set_driver(uri,'neo4j','scientia')
 URL = imageURL.ImageURL('databases/image_urls.json')
@@ -38,6 +39,7 @@ app = Flask(__name__, static_url_path='/static/')
 @app.route("/")
 def get_index():
 	# full_filename = os.path.join(app.config['UPLOAD_FOLDER'],'graph.jpg')
+    #return render_template('index.html')
 	return app.send_static_file('index.html')
 
 
@@ -62,7 +64,8 @@ def get_urls():
         #pdb.set_trace()
         image_ids = IMAGS.getQuery(query)
         image_urls = URL.getURLs(image_ids)
-        print image_urls[:20]
+        return_urls =  [item.encode('ascii','ignore') for item in image_urls[:15]]
+        print return_urls
         #print 'completed query in %3.4f' % (time.time()-start)
         #pdb.set_trace()
 
@@ -72,7 +75,7 @@ def get_urls():
     	# qjson = json.loads("place for pictures")
     	# print(qjson)
     	# return json.dumps({'success':True}), qjson, {'ContentType':'application/json'}
-    	return json.dumps({'status':'OK', 'pass':image_urls[:15]});
+    	return json.dumps({'status':'OK', 'pass':return_urls});
 		# return Response(dumps("YES"),
 		#                 mimetype="application/json")
 

@@ -384,7 +384,9 @@ class Retriever:
                     query_ids_inverted,
                     node_ids_cooccurence):
         #pdb.set_trace()
+        net_nodes = {}
         query_vector = np.ones((len(inverted_tlqs)))
+        tlq_counter = 0
         for top_level_query_idx in inverted_tlqs:
         #top_level_query_idx = 0
         #Extract the relevant approximates from query_collection
@@ -477,7 +479,14 @@ class Retriever:
                     
                 #top_level_query_score = sum(list(node_scores.values()))/len(node_scores)
                 #pdb.set_trace()
-            query_vector[top_level_query_idx]=sum(node_scores.values())/len(node_scores)
+            query_vector[tlq_counter]=sum(node_scores.values())/len(node_scores)
+            net_nodes[tlq_counter] = len(node_scores)
+            tlq_counter+=1
+        net_node_num = 0.0
+        for query in net_nodes:
+            net_node_num+=net_nodes[query]
+        for i in range(tlq_counter):
+            query_vector[i] = query_vector[i]*(net_nodes[i]/net_node_num)
         #pdb.set_trace()
         return np.linalg.norm(query_vector)
 
