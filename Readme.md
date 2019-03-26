@@ -1,6 +1,10 @@
 # IMAG-S: Image Matching with Approximate Graph Search
 
-The IMAG-S platform allows one to perform fast approximate image retrieval ussing approximate graph search on scene graphs. We do not cover cache and database setup here. Instead, this repository only discusses setup and execution options for the IMAG-S platform. We assume Step 0 is completed.
+This is an implementation of the Approximate Query matching paper ['Approximate Query Matching for Graph-Based Holistic Image Retrieval
+'](https://link.springer.com/chapter/10.1007/978-3-319-94301-5_6). ([arXiv link here](https://arxiv.org/abs/1803.05401)).
+
+
+The IMAG-S application allows one to perform fast approximate image retrieval ussing approximate graph search on scene graphs. We do not cover cache and database setup here. Instead, this repository only discusses setup and execution options for the IMAG-S platform. We assume Step 0 is completed.
 
 **Step 0** refers to following the instructions in the neo-csv-gen repository's `Code Steps.md` file.
 
