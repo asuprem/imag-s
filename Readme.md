@@ -6,7 +6,7 @@ This is an implementation of the Approximate Query matching paper ['Approximate 
 
 The IMAG-S application allows one to perform fast approximate image retrieval ussing approximate graph search on scene graphs. We do not cover cache and database setup here. Instead, this repository only discusses setup and execution options for the IMAG-S platform. We assume Step 0 is completed.
 
-**Step 0** refers to following the instructions in the neo-csv-gen repository's `Code Steps.md` file.
+**Step 0** refers to following the instructions in the neo-csv-gen repository's `Code Steps.md` file. The repository is located [here](https://github.com/asuprem/neo4j-csv-gen)
 
 ## Requirements
 
